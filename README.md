@@ -41,7 +41,7 @@ python STRcount.py summarizecounts SAMPLES [...] OUTPUT_FILE
 
 Example:
 ```
-python STRcount.py summarizecounts sample1.countstable.txt sample2.countstable.txt control1.countstable.txt control2.countstable.txt experiment.countmatrix.txt'
+python STRcount.py summarizecounts sample1.countstable.txt sample2.countstable.txt control1.countstable.txt control2.countstable.txt experiment.countmatrix.txt
 ```
 
 
