@@ -50,7 +50,7 @@ python STRcount.py summarizecounts sample1.countstable.txt sample2.countstable.t
 Last, we use edgeR to calculate differential tandem repeats. Here, we then use EnhancedVolcano to plot the results in a volcano plot
 
 ## Full options
-### processrepeats function
+### STRcount processrepeats function
 ```
 strcount2.6_rewrite.py processrepeats [-h] [--outputprefix OUTPUT_PREFIX] [--outputtype OUTPUT_TYPE]
                                              [--processes PROCESSES_NUMBER] [--grouping GROUPING_SETTING]
@@ -113,7 +113,7 @@ optional arguments:
   --readblocksize READ_BLOCK_SIZE
                         approximate number of lines that are analyzed at once in a (parallel) process (default: 50000)
 ```
-### summarizecounts function
+### STRcount summarizecounts function
 ```
 strcount2.6_rewrite.py summarizecounts [-h] [--samplenames REPORTED_MOTIF [REPORTED_MOTIF ...]]
                                               [--reportmotif {detected,rc,combine}]
