@@ -52,7 +52,7 @@ Last, we use edgeR to calculate differential tandem repeats. Here, we then use E
 ## Full options
 ### STRcount processrepeats function
 ```
-strcount2.6_rewrite.py processrepeats [-h] [--outputprefix OUTPUT_PREFIX] [--outputtype OUTPUT_TYPE]
+STRcount.py processrepeats [-h] [--outputprefix OUTPUT_PREFIX] [--outputtype OUTPUT_TYPE]
                                              [--processes PROCESSES_NUMBER] [--grouping GROUPING_SETTING]
                                              [--minperfection MIN_PERFECTION] [--maxperfection MAX_PERFECTION]
                                              [--minrepeatlength MIN_REP_REGION_LENGTH]
@@ -115,7 +115,7 @@ optional arguments:
 ```
 ### STRcount summarizecounts function
 ```
-strcount2.6_rewrite.py summarizecounts [-h] [--samplenames REPORTED_MOTIF [REPORTED_MOTIF ...]]
+STRcount.py summarizecounts [-h] [--samplenames REPORTED_MOTIF [REPORTED_MOTIF ...]]
                                               [--reportmotif {detected,rc,combine}]
                                               inputpaths [inputpaths ...] outputfile
 
