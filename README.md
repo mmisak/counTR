@@ -62,16 +62,15 @@ Last, we use our read counts for a differential read count analysis. For this, a
 ### STRcount processrepeats function
 ```
 STRcount.py processrepeats [-h] [--outputprefix OUTPUT_PREFIX] [--outputtype OUTPUT_TYPE]
-                                             [--processes PROCESSES_NUMBER] [--grouping GROUPING_SETTING]
-                                             [--minperfection MIN_PERFECTION] [--maxperfection MAX_PERFECTION]
-                                             [--minrepeatlength MIN_REP_REGION_LENGTH]
-                                             [--maxrepeatlength MAX_REP_REGION_LENGTH] [--minunitsize MIN_UNIT_SIZE]
-                                             [--maxunitsize MAX_UNIT_SIZE] [--minrepeatnumber MIN_REP_NUMBER]
-                                             [--maxrepeatnumber MAX_REP_NUMBER]
-                                             [--multirepreads MULTI_REP_READS_SETTING]
-                                             [--readwhitelist READ_WHITELIST_FILE] [--readblacklist READ_BLACKLIST_FILE]
-                                             [--readblocksize READ_BLOCK_SIZE]
-                                             inputpath outputdirectory phobospath
+                                               [--processes PROCESSES_NUMBER] [--grouping GROUPING_SETTING]
+                                               [--groupingmotif {detected,rc,combine}] [--minperfection MIN_PERFECTION]
+                                               [--maxperfection MAX_PERFECTION] [--minrepeatlength MIN_REP_REGION_LENGTH]
+                                               [--maxrepeatlength MAX_REP_REGION_LENGTH] [--minunitsize MIN_UNIT_SIZE]
+                                               [--maxunitsize MAX_UNIT_SIZE] [--minrepeatnumber MIN_REP_NUMBER]
+                                               [--maxrepeatnumber MAX_REP_NUMBER] [--multirepreads MULTI_REP_READS_SETTING]
+                                               [--readwhitelist READ_WHITELIST_FILE] [--readblacklist READ_BLACKLIST_FILE]
+                                               [--readblocksize READ_BLOCK_SIZE]
+                                               inputpath outputdirectory phobospath
 
 positional arguments:
   inputpath             path to sequencing data file in fasta(.gz) or fastq(.gz) format
@@ -83,15 +82,18 @@ optional arguments:
   --outputprefix OUTPUT_PREFIX
                         prefix of output files, prefix will be taken from input file, if empty string (default: )
   --outputtype OUTPUT_TYPE
-                        output to generate, countstable.txt ('c'), repeatinfo.txt ('i'), repeatinfo.txt.gz ('g'),
-                        concatenate the letters for multiple outputs, e.g. 'cg' for countstable.txt and
-                        repeatinfo.txt.gz (default: c)
+                        output to generate, countstable.txt ('c'), repeatinfo.txt ('i'), repeatinfo.txt.gz ('g'), concatenate
+                        the letters for multiple outputs, e.g. 'cg' for countstable.txt and repeatinfo.txt.gz (default: c)
   --processes PROCESSES_NUMBER
-                        number of parallel processes to be used, to automatically set to maximum number of available
-                        logical cores, use 'auto' (default: auto)
+                        number of parallel processes to be used, to automatically set to maximum number of available logical
+                        cores, use 'auto' (default: auto)
   --grouping GROUPING_SETTING
-                        repeat grouping settings, example: 'perfection:[0,100)[100,100] length:[0,30)[30,inf]' (default:
-                        None)
+                        repeat grouping settings, example: 'perfection:[0,100)[100,100] length:[0,30)[30,inf]', if 'None',
+                        repeats will be only grouped by their motif (default: None)
+  --groupingmotif {detected,rc,combine}
+                        motif to report for grouping, 'detected' to report the detected motif, 'rc' for it's reverse
+                        complement, 'combine' (combines forward and reverse complement), all motifs are reported as their
+                        lexicographically minimal string rotation (default: detected)')
   --minperfection MIN_PERFECTION
                         minimum perfection of a repeat to be considered (default: 0)
   --maxperfection MAX_PERFECTION
@@ -104,8 +106,8 @@ optional arguments:
   --minunitsize MIN_UNIT_SIZE
                         minimum repeat unit size for a repeat to be considered (default: 0)
   --maxunitsize MAX_UNIT_SIZE
-                        maximum repeat unit size for a repeat to be considered (for infinite, set value to 'inf')
-                        (default: inf)
+                        maximum repeat unit size for a repeat to be considered (for infinite, set value to 'inf') (default:
+                        inf)
   --minrepeatnumber MIN_REP_NUMBER
                         minimum number of repeat units for a repeat to be considered (default: 0)
   --maxrepeatnumber MAX_REP_NUMBER
@@ -113,8 +115,8 @@ optional arguments:
   --multirepreads MULTI_REP_READS_SETTING
                         which repeat to consider in case of reads with multiple repeats (after other filters have been
                         applied), either 'all' (consider all repeats for each read), 'none' (ignore multi repeat reads),
-                        'longest' (only consider the longest repeat) or 'unique_longest' (for each unique repeat unit,
-                        only consider the longest) (default: all)
+                        'longest' (only consider the longest repeat) or 'unique_longest' (for each unique repeat unit, only
+                        consider the longest) (default: all)
   --readwhitelist READ_WHITELIST_FILE
                         path to list of readnames that will not be filtered out, the rest is filtered (default: None)
   --readblacklist READ_BLACKLIST_FILE
@@ -124,23 +126,16 @@ optional arguments:
 ```
 ### STRcount summarizecounts function
 ```
-STRcount.py summarizecounts [-h] [--samplenames REPORTED_MOTIF [REPORTED_MOTIF ...]]
-                                              [--reportmotif {detected,rc,combine}]
-                                              inputpaths [inputpaths ...] outputfile
+strcount2.6.2_rewrite.py summarizecounts [-h] [--samplenames SAMPLE_NAMES [SAMPLE_NAMES ...]]
+                                                inputpaths [inputpaths ...] outputfile
 
 positional arguments:
-  inputpaths            countstable.txt files to be summarized into a count matrix, can be either a directory (all
-                        contained files ending in '.countstable.txt' will be summarized) or the paths to the individual
-                        files
+  inputpaths            countstable.txt files to be summarized into a count matrix
   outputfile            path to output count matrix.
 
 optional arguments:
   -h, --help            show this help message and exit
-  --samplenames REPORTED_MOTIF [REPORTED_MOTIF ...]
-                        list of sample names to be used in the resulting header in the same order as input files. If
-                        not set, input file names will be used (default: None)')
-  --reportmotif {detected,rc,combine}
-                        motif to report in the output. 'detected' to report the detected motif, 'rc' for it's reverse
-                        complement (for reversely stranded data), 'combine' (combines forward and reverse complement to
-                        alphebetically minimal motif) (default: detected)')
+  --samplenames SAMPLE_NAMES [SAMPLE_NAMES ...]
+                        list of sample names to be used in the resulting header in the same order as input files. If not set,
+                        input file names will be used (default: None)')
 ```
