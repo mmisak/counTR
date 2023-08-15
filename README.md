@@ -21,33 +21,41 @@ Note: STRcount is not affiliated with Phobos or its developer Christoph Mayer.
 - Phobos binary - STRcount was tested with the binary `phobos_64_libstdc++6` of the package `phobos-v3.3.12-linux`. Phobos is freely available for academic research and can be downloaded here: https://www.ruhr-uni-bochum.de/spezzoo/cm/cm_phobos_download.htm
 - Python 3.2 or newer - STRcount was tested on Python 3.9.7
 
-## Performing an STRcount analysis
+## Quick start
 ### Running STRcount processrepeats
 Run STRcount's processrepeats function on all samples of your sequencing data in FASTQ(.gz) or FASTA(.gz) format:
 ```
 python STRcount.py processrepeats SAMPLE OUTPUT_FOLDER PHOBOS_BINARY [addtional parameters]
 ```
 
-Example:
+**Example**:
 ```
-python STRcount.py processrepeats sample1.fastq.gz ./strcount_out/ /home/phobos/phobos-v3.3.12-linux/bin/phobos_64_libstdc++6 --grouping 'perfection:[0,100)[100,100] length:[0,40),[0,80),[80,inf]' --processes 40
+python STRcount.py processrepeats sample1.fastq.gz ./strcount_out/ /home/phobos/phobos-v3.3.12-linux/bin/phobos_64_libstdc++6 --grouping 'perfection:[0,100)[100,100] length:[0,40),[40,80),[80,inf]' --processes 40
 ```
 
+In this example, we are running the `processrepeats` function on a sample called sample1.fastq.gz using 40 processes and grouping the detected repeats by perfection and length. The output is written into a folder called `strcount_out` in the current working directiory, the folder will be created if not already present. Perfection grouping is done here by splitting the repeats in 2 groups, imperfect (perfection between 0 and lower than 100, as indicated by the brackets: `[0,100)`, square brackets indicate an inclusive range, while round brackets indicate an exclusive range) and perfect (`[100,100]`) as well as 3 length groups with the last group (`[80,inf]`) not having an upper length range limit.
+
+**Important**:
+- STRcount runs much faster on machines with many cores. By default, STRcount will determine the available number of cores by itself and use all of them. On a workstation PC, it can make sense to limit the number of cores by setting `--processes` to a lower number than the actually available cores.
+- When using grouping, in most cases it will make sense to only use grouping ranges that a are not overlapping as illustrated in the above example (`length:[0,40),[40,80),[80,inf]`). Note the square and roud brackets indicating inclusive and exclusive ranges, respecitvely. In case of overlapping ranges (e.g. `length:[0,40],[0,80],[80,inf]`), a repeat of length 40bp or 80bp would be grouped into two diffent groups and increase the repeat count of both groups by 1.
+- Depending on the analysis, you might want to set the `--groupingmotif` parameter accordingly. In a non strand-aware sequencing (common WGS, ChIP-seq, CUT&Run, CUT&Tag, ..), it can make sense to set the parameter to `combine` and combine reverse complements of repeats (e.g. AGC/CTG) into a single group as these techniques commonly do not discriminate between strands. If you do not wish to combine reverse complements of repeats and group repeats by the repeat as it is detected in the repeat (e.g. for a forward-stranded sequencing), set the parameter to `detected`, to group by the reverse complement of the retected repeat (e.g. for a reversely-stranded sequencing), set the parameter to `rc`.
+- If you wish to generate the repeatinfo.txt file to get detailled information (such as perfection, mismatches in comparison to a perfect repeat and more) on every single detected repeat, include `i` (for `.repeatinfo.txt`) or `g` (for `.repeatinfo.txt.gz`) in the `--outputtype` parameter. Warning: This file is usually relatively large. In our tests, its file size was usually comparable to the size of the raw reads in FASTQ format. 
+  
 ### Running STRcount summarizecounts
-Summarize the results into a count matrix that can be used for downstream analysis:
+After obtaining `.countstable.txt` files for all of our samples, we summarize the results into a count matrix that can be used for downstream analysis:
 ```
 python STRcount.py summarizecounts SAMPLES [...] OUTPUT_FILE
 ```
 
-Example:
+**Example**:
 ```
 python STRcount.py summarizecounts sample1.countstable.txt sample2.countstable.txt control1.countstable.txt control2.countstable.txt experiment.countmatrix.txt
 ```
 
+### Read count normalization and differential repeat content analysis
+Last, we use our read counts for a differential read count analysis. For this, analyses using edgeR, DESeq2, limma voom or Wilcoxon rank sum test are suitable.
 
-
-### Differential analysis using EdgeR
-Last, we use edgeR to calculate differential tandem repeats. Here, we then use EnhancedVolcano to plot the results in a volcano plot
+**Example (using EdgeR)**:
 
 ## Full options
 ### STRcount processrepeats function
