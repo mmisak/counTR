@@ -14,7 +14,7 @@ Note: STRcount is not affiliated with Phobos or its developer Christoph Mayer.
 1. STRcount offers unbiased de novo detection of differential short tandem repeats in quantitative NGS data
 2. Works independent of reference genomes, raw reads are the only input data
 3. Repeats can be grouped by repeat length and/or perfection prior to differential comparison
-4. Output can be used to generate PCA plots, heatmaps, volcano plots and others
+4. Output can be used to generate PCA plots, sample correlation heatmaps, volcano plots and more
 
 ## Requirements
 - Linux - STRcount was tested on Ubuntu 18.04. Windows or macOS systems might work but were not tested thus far
