@@ -5,13 +5,13 @@
 
 ## Overview
 <p align="justify">
-STRcount is a read mapping-free method to detect differential tandem repeat content between different groups of quantitative sequencing data samples. STRcount scans raw reads for repeats using Phobos, optionally filters them and then groups detected repeats and outputs their counts in a countstable, allowing for read count normalization and subsequent identification of differential tandem repeat content between groups of samples. Possible applications include the unbiased detection of tandem repeat enrichment in DNA/chromatin profiling sequencing (e.g. ChIP-seq, CUT&Run, CUT&Tag, DIP-seq) or comparison of tandem repeat content in whole genome sequencing samples.
+STRcount is a read mapping-free method to detect differential short tandem repeat (STR) content between different groups of quantitative sequencing data samples. STRcount scans raw reads for STRs using Phobos, optionally filters them and then groups detected repeats and outputs their counts in a countstable, allowing for read count normalization and subsequent identification of differential tandem repeat content between groups of samples. Possible applications include the unbiased detection of STR enrichment in DNA/chromatin profiling sequencing (e.g. ChIP-seq, CUT&Run, CUT&Tag, DIP-seq) or comparison of STR content in whole genome sequencing samples.
 
 Note: STRcount is not affiliated with Phobos or its developer Christoph Mayer.
 </p>
 
 ## Features
-1. STRcount offers unbiased de novo detection of differential tandem repeats in quantitative NGS data
+1. STRcount offers unbiased de novo detection of differential short tandem repeats in quantitative NGS data
 2. Works independent of reference genomes, raw reads are the only input data
 3. Repeats can be grouped by repeat length and/or perfection prior to differential comparison
 4. Output can be used to generate PCA plots, heatmaps, volcano plots and others
@@ -38,6 +38,7 @@ In this example, we are running the `processrepeats` function on a sample called
 **Important**:
 - STRcount runs much faster on machines with many cores. By default, STRcount will determine the available number of cores by itself and use all of them. On a workstation PC, it can make sense to limit the number of cores by setting `--processes` to a lower number than the actually available cores.
 - When using grouping, in most cases it will make sense to only use grouping ranges that a are not overlapping as illustrated in the above example (`length:[0,40),[40,80),[80,inf]`). Note the square and roud brackets indicating inclusive and exclusive ranges, respecitvely. In case of overlapping ranges (e.g. `length:[0,40],[0,80],[80,inf]`), a repeat of length 40bp or 80bp would be grouped into two diffent groups and increase the repeat count of both groups by 1.
+- STRcount classifies STR units by their lexicographically minimal string rotation, e.g. the repeat unit of a CAGCAGCAGCAGCAGC repeat is AGC, the repeat unit of its reverse compliment is CTG
 - Depending on the analysis, you might want to set the `--groupingmotif` parameter accordingly. In a non strand-aware sequencing (common WGS, ChIP-seq, CUT&Run, CUT&Tag, ..), it can make sense to set the parameter to `combine` and combine reverse complements of repeats (e.g. AGC/CTG) into a single group as these techniques commonly do not discriminate between strands. If you do not wish to combine reverse complements of repeats and group repeats by the repeat as it is detected in the repeat (e.g. for a forward-stranded sequencing), set the parameter to `detected`, to group by the reverse complement of the retected repeat (e.g. for a reversely-stranded sequencing), set the parameter to `rc`.
 - If you wish to generate the repeatinfo.txt file to get detailled information (such as perfection, mismatches in comparison to a perfect repeat and more) on every single detected repeat, include `i` (for `.repeatinfo.txt`) or `g` (for `.repeatinfo.txt.gz`) in the `--outputtype` parameter. Warning: This file is usually relatively large. In our tests, its file size was usually comparable to the size of the raw reads in FASTQ format. 
   
