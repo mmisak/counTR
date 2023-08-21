@@ -162,13 +162,13 @@ Repeatinfo files are relatively large tab-separated files (size is usually compa
 | ------------- | ------------- |
 | unit  | Repeat unit of the detected repeat. This will always correspond to the lexicographically minimal string rotation of the repeat as it was detected in the read |
 | perfection  | A value between 0 and 100 describing the perfection of the repeat. Perfection is calculated by Phobos using the following formula: ${ normalized\\_length − mismatches − deletions − insertions − Ns \over normalized\\_length}$ |
-| length  | Length of the whole repeat portion of a read from start to end  |
+| length  | Length of the whole detected repeat in a read |
 | normalized_length  | Detected repeat length minus insertions, plus deletions. According to the Phobos manual, this value can be interpreted as "the number of nucleotides in the tandem repeat sequence before insertions and deletions lead to its degeneration"
-| unit_offset  | Content Cell  |
+| unit_offset  | Offset of the first completed repeat unit in respect to its lexicographically minimal string rotation <br><br> Example: a detected repeat might look like this: TTAGGGTTAGGGTTAGGG, the first fully completed repeat unit if read from the start is TTAGGG. STRcount will label this as an AGGGTT repeat (in lexicographically minimal string rotation form). To go from TTAGGG to AGGGTT, the string has to be rotated forward 4 times, which is the value of the offset |
 | start_in_read  | Start position of the repeat in the read |
 | end_in_read  | End position of the repeat in the read |
-| repeat_number  | Content Cell  |
-| alignment_score  | Content Cell  |
+| copy_number  | Number of times a repeat unit is found in a repeat. Calulated by dividing the `normalized_length` by the length of the repeat unit, number can have decimals <br><br> Example: The ATGC copy number in ATGCATGCAT is 2.5 |
+| alignment_score  | Alignment score of the repeat when compared to an ideal repeat with the same repeat unit. The alignment is performed by Phobos using its default alignment parameters, which can be found in the Phobos manual.  |
 | mismatches  | Number of mismatches in the repeat  |
 | insertions  | Number of insertions in the repeat  |
 | deletions  | Number of deletions in the repeat  |
@@ -179,7 +179,7 @@ Repeatinfo files are relatively large tab-separated files (size is usually compa
 
 **Example:**
 ```
-unit  perfection  length  normalized_length  unit_offset  start_in_read  end_in_read  repeat_number  alignment_score  mismatches  insertions  deletions  Ns  read_name  grouping  imperfections
+unit  perfection  length  normalized_length  unit_offset  start_in_read  end_in_read  copy_number  alignment_score  mismatches  insertions  deletions  Ns  read_name  grouping  imperfections
 ACCG  100.0  10  10  1  20  29  2.5  6  0  0  0  0  SRR3277954.2  ACCG <perfection:[100.0,100.0] length:[0.0,40.0)>  none
 CTT  100.0  9  9  0  41  49  3.0  6  0  0  0  0  SRR3277954.8  CTT <perfection:[100.0,100.0] length:[0.0,40.0)>  none
 AT  98.039  50  51  0  1  50  25.5  43  0  0  1  0  SRX3277954.15  AT <perfection:[0.0,100.0) length:[40.0,80.0)>  2_1[19_20,20]delT
