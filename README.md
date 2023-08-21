@@ -5,7 +5,7 @@
 
 ## Overview
 <p align="justify">
-STRcount is a read mapping-free method to detect differential short tandem repeat (STR) content between different groups of quantitative sequencing data samples. STRcount scans raw reads for STRs using Phobos, optionally filters them and then groups detected repeats and outputs their counts in a countstable, allowing for read count normalization and subsequent identification of differential tandem repeat content between groups of samples. Possible applications include the unbiased detection of STR enrichment in DNA/chromatin profiling sequencing (e.g. ChIP-seq, CUT&Run, CUT&Tag, DIP-seq) or comparison of STR content in whole genome sequencing samples.
+STRcount is a read mapping-free method to detect differential short tandem repeat (STR) content between different groups of quantitative sequencing data samples. STRcount scans raw reads for STRs using Phobos, optionally filters them and then groups detected repeats and outputs their counts in a counts table, allowing for read count normalization and subsequent identification of differential tandem repeat content between groups of samples. Possible applications include the unbiased detection of STR enrichment in DNA/chromatin profiling sequencing (e.g. ChIP-seq, CUT&Run, CUT&Tag, DIP-seq) or comparison of STR content in whole genome sequencing samples.
 
 Note: STRcount is not affiliated with Phobos or its developer Christoph Mayer. For STRcount to work, Phobos must be obtained from the official website (download link below in the "Requirements" section). Phobos can be used freely for academic and non-commercial use according to its license as described here: https://www.ruhr-uni-bochum.de/ecoevo/cm/cm_phobos.htm
 </p>
@@ -33,14 +33,14 @@ python STRcount.py processrepeats SAMPLE OUTPUT_FOLDER PHOBOS_BINARY [addtional 
 python STRcount.py processrepeats sample1.fastq.gz ./strcount_out/ /home/phobos/phobos-v3.3.12-linux/bin/phobos_64_libstdc++6 --grouping 'perfection:[0,100)[100,100] length:[0,40),[40,80),[80,inf]' --processes 40
 ```
 
-In this example, we are running the `processrepeats` function on a sample called sample1.fastq.gz using 40 processes and grouping the detected repeats by perfection and length. The output is written into a folder called `strcount_out` in the current working directiory, the folder will be created if not already present. Perfection grouping is done here by splitting the repeats in 2 groups, imperfect (perfection between 0 and lower than 100, as indicated by the brackets: `[0,100)`, square brackets indicate an inclusive range, while round brackets indicate an exclusive range) and perfect (`[100,100]`) as well as 3 length groups with the last group (`[80,inf]`) not having an upper length range limit.
+In this example, we are running the `processrepeats` function on a sample called sample1.fastq.gz using 40 processes and grouping the detected repeats by perfection and length. The output is written into a folder called `strcount_out` in the current working directory, the folder will be created if not already present. Perfection grouping is done here by splitting the repeats in 2 groups, imperfect (perfection between 0 and lower than 100, as indicated by the brackets: `[0,100)`, square brackets indicate an inclusive range, while round brackets indicate an exclusive range) and perfect (`[100,100]`) as well as 3 length groups with the last group (`[80,inf]`) not having an upper length range limit.
 
 **Important**:
 - STRcount runs much faster on machines with many cores. By default, STRcount will determine the available number of cores by itself and use all of them. On a workstation PC, it can make sense to limit the number of cores by setting `--processes` to a lower number than the actually available cores.
-- When using grouping, in most cases it will make sense to only use grouping ranges that a are not overlapping as illustrated in the above example (`length:[0,40),[40,80),[80,inf]`). Note the square and roud brackets indicating inclusive and exclusive ranges, respecitvely. In case of overlapping ranges (e.g. `length:[0,40],[0,80],[80,inf]`), a repeat of length 40bp or 80bp would be grouped into two diffent groups and increase the repeat count of both groups by 1.
+- When using grouping, in most cases it will make sense to only use grouping ranges that a are not overlapping as illustrated in the above example (`length:[0,40),[40,80),[80,inf]`). Note the square and round brackets indicating inclusive and exclusive ranges, respecitvely. In case of overlapping ranges (e.g. `length:[0,40],[0,80],[80,inf]`), a repeat of length 40bp or 80bp would be grouped into two diffent groups and increase the repeat count of both groups by 1.
 - STRcount classifies STR units by their lexicographically minimal string rotation, e.g. the repeat unit of a CAGCAGCAGCAGCAGC repeat is AGC, the repeat unit of its reverse compliment is CTG
-- Depending on the analysis, you might want to set the `--groupingmotif` parameter accordingly. In a non strand-aware sequencing (common WGS, ChIP-seq, CUT&Run, CUT&Tag, ..), it can make sense to set the parameter to `combine` and combine reverse complements of repeats (e.g. AGC/CTG) into a single group as these techniques commonly do not discriminate between strands. If you do not wish to combine reverse complements of repeats and group repeats by the repeat as it is detected in the repeat (e.g. for a forward-stranded sequencing), set the parameter to `detected`, to group by the reverse complement of the retected repeat (e.g. for a reversely-stranded sequencing), set the parameter to `rc`.
-- If you wish to generate the repeatinfo.txt file to get detailled information (such as perfection, mismatches in comparison to a perfect repeat and more) on every single detected repeat, include `i` (for `.repeatinfo.txt`) or `g` (for `.repeatinfo.txt.gz`) in the `--outputtype` parameter. Warning: This file is usually relatively large. In our tests, its file size was usually comparable to the size of the raw reads in FASTQ format. 
+- Depending on the analysis, you might want to set the `--groupingmotif` parameter accordingly. In a non strand-aware sequencing (common WGS, ChIP-seq, CUT&Run, CUT&Tag, ..), it can make sense to set the parameter to `combine` and combine reverse complements of repeats (e.g. AGC/CTG) into a single group as these techniques commonly do not discriminate between strands. If you do not wish to combine reverse complements of repeats and group repeats by the repeat as it is detected in the repeat (e.g. for a forward-stranded sequencing), set the parameter to `detected`, to group by the reverse complement of the detected repeat (e.g. for a reversely-stranded sequencing), set the parameter to `rc`.
+- If you wish to generate the repeatinfo.txt file to get detailed information (such as perfection, mismatches in comparison to a perfect repeat and more) on every single detected repeat, include `i` (for `.repeatinfo.txt`) or `g` (for `.repeatinfo.txt.gz`) in the `--outputtype` parameter. Warning: This file is usually relatively large. In our tests, its file size was usually comparable to the size of the raw reads in FASTQ format. 
   
 ### Running STRcount summarizecounts
 After obtaining `.countstable.txt` files for all of our samples, we summarize the results into a count matrix that can be used for downstream analysis:
@@ -74,7 +74,7 @@ STRcount.py processrepeats [-h] [--outputprefix OUTPUT_PREFIX] [--outputtype OUT
 
 positional arguments:
   inputpath             path to sequencing data file in fasta(.gz) or fastq(.gz) format
-  outputdirectory       directory where the putput will be written to
+  outputdirectory       directory where the output will be written to
   phobospath            path to Phobos executable
 
 optional arguments:
@@ -155,7 +155,7 @@ CTT <perfection:[100.0,100.0] length:[0.0,40.0)>  1
 ```
 ### Repeat info files
 
-Repeat info files are relatively large tab-separated files (size is usually comparable to the size of FASTQ files used as input) containing details for each single detected repeat. These files can be generated by the processrepeats function and are only generated if specified via the `--outputtype` argument. Most of the values contained are directly taken from the Phobos output and their detailled definition can be looked up in the manual of the Phobos package. The following table briefly describes the meaning of each column.
+Repeat info files are relatively large tab-separated files (size is usually comparable to the size of FASTQ files used as input) containing details for each single detected repeat. These files can be generated by the processrepeats function and are only generated if specified via the `--outputtype` argument. Most of the values contained are directly taken from the Phobos output and their detailed definition can be looked up in the manual of the Phobos package. The following table briefly describes the meaning of each column.
 
 
 | Column  | Description  |
@@ -174,7 +174,7 @@ Repeat info files are relatively large tab-separated files (size is usually comp
 | deletions  | Number of deletions in the repeat  |
 | Ns  | Number of bases that could not be called and are therefore denoted as 'N' in the read |
 | read_name  | Name of the read containing the detected repeat  |
-| grouping  | Group to which a repeat got assigned. If run with `--groupingmotif` set to `detected` and without providing the `--grouping` parameter (i.e. both at default settings), this parameter will simply correspond to the detected repeat unit, since repeats will only be grouped by them. Changing the aforementioned parameters can change the group a repeat gets assigned to. This group correspons to the group by which will have its count increased in the counts table due to the detection of the current repeat |
+| grouping  | Group to which a repeat got assigned. If run with `--groupingmotif` set to `detected` and without providing the `--grouping` parameter (i.e. both at default settings), this parameter will simply correspond to the detected repeat unit, since repeats will only be grouped by them. Changing the aforementioned parameters can change the group a repeat gets assigned to. This group corresponds to the group by which will have its count increased in the counts table due to the detection of the current repeat |
 | imperfections  | Content Cell  |
 
 **Example:**
