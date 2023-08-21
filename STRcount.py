@@ -576,7 +576,7 @@ def parse_parameters():
         for subparser in [parser_processrepeats, parser_summarizecounts]:
                 if subparser == parser_processrepeats:
                         subparser.add_argument("inputpath", type=str, help="path to sequencing data file in fasta(.gz) or fastq(.gz) format")
-                        subparser.add_argument("outputdirectory", type=str, help="directory where the putput will be written to")
+                        subparser.add_argument("outputdirectory", type=str, help="directory where the output will be written to")
                         subparser.add_argument("phobospath", type=str, help="path to Phobos executable")
                         subparser.add_argument("--outputprefix", type=str, default="", dest="output_prefix", help="prefix of output files, prefix will be taken from input file, if empty string (default: %(default)s)")
                         subparser.add_argument("--outputtype", type=str, default="c", dest="output_type", help="output to generate, countstable.txt ('c'), repeatinfo.txt ('i'), repeatinfo.txt.gz ('g'), concatenate the letters for multiple outputs, e.g. 'cg' for countstable.txt and repeatinfo.txt.gz (default: %(default)s)")
