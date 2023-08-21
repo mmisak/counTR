@@ -6,7 +6,6 @@ import gzip
 import multiprocessing
 import itertools
 import re
-#import time
 import threading
 
 
@@ -198,11 +197,11 @@ def determine_grouping_setting(grouping_setting):
                 grouping_list = list(itertools.product(*bin_list)) #create all combinations from 1 item per sub-list in bin_list
                 return(grouping_list)
 
-def filter_repeats(repeat, min_perfection, max_perfection, min_rep_region_length, max_rep_region_length, min_unit_size, max_unit_size, min_rep_number, max_rep_number, read_whitelist, read_blacklist):
+def filter_repeats(repeat, min_perfection, max_perfection, min_rep_region_length, max_rep_region_length, min_unit_size, max_unit_size, min_copy_number, max_copy_number, read_whitelist, read_blacklist):
         """Filters repeats according to user supplied settings"""
         if (repeat.read_name in read_blacklist) or (repeat.read_name in read_whitelist) or not (
                 (min_perfection <= repeat.perfection <= max_perfection) and (min_rep_region_length <= repeat.length <= max_rep_region_length) and
-                (min_unit_size <= repeat.unit_length <= max_unit_size) and (min_rep_number <= repeat.copy_number <= max_rep_number)):
+                (min_unit_size <= repeat.unit_length <= max_unit_size) and (min_copy_number <= repeat.copy_number <= max_copy_number)):
                 repeat.masked = True
 
 class CustomOpen:
@@ -322,13 +321,13 @@ def read_phobos_out_string(arguments):
                         value = str(value)
                 elif attribute == "unit_size":
                         value = int(value)
-                elif attribute == "repeat_number":
+                elif attribute == "copy_number":
                         value = float(value)
                 elif attribute == "read_name":
                         value = str(value)
                 return(value)
 
-        reads, reads_file_type, phobos_path, grouping, grouping_motif_setting, min_perfection, max_perfection, min_rep_region_length, max_rep_region_length, min_unit_size, max_unit_size, min_rep_number, max_rep_number, multi_rep_reads_setting, whitelisted_reads, blacklisted_reads, countstable_file_name, repeatinfo_file_name, repeatinfo_gz_file_name = arguments
+        reads, reads_file_type, phobos_path, grouping, grouping_motif_setting, min_perfection, max_perfection, min_rep_region_length, max_rep_region_length, min_unit_size, max_unit_size, min_copy_number, max_copy_number, multi_rep_reads_setting, whitelisted_reads, blacklisted_reads, countstable_file_name, repeatinfo_file_name, repeatinfo_gz_file_name = arguments
 
         attribute_mapping = {"unit":"unit", "bp":"length", "BP":"normalized_repeat_length", "pt":"alignment_score", "%":"perfection",  "mis":"mismatches", "ins":"insertions", "del":"deletions", "N":"N"}
 
@@ -398,7 +397,7 @@ def read_phobos_out_string(arguments):
                                         repeat_properties["imperfections"] = imperfections
                                         current_repeat = Repeat(repeat_properties)
                                         current_repeat.group_repeat(grouping, grouping_motif_setting)
-                                        filter_repeats(current_repeat, min_perfection, max_perfection, min_rep_region_length, max_rep_region_length, min_unit_size, max_unit_size, min_rep_number, max_rep_number, whitelisted_reads, blacklisted_reads) #function directly filters repeats by setting their 'masked' attribute to True, function does not return anything
+                                        filter_repeats(current_repeat, min_perfection, max_perfection, min_rep_region_length, max_rep_region_length, min_unit_size, max_unit_size, min_copy_number, max_copy_number, whitelisted_reads, blacklisted_reads) #function directly filters repeats by setting their 'masked' attribute to True, function does not return anything
                                         current_read_repeats.append(current_repeat)
 
         #add last repeat
@@ -421,7 +420,7 @@ def read_phobos_out_string(arguments):
                                         
         return(repeat_counts, detected_repeats)
 
-def process_repeats(input_path, countstable_file_name, repeatinfo_file_name, repeatinfo_gz_file_name, phobos_path, processes_number, grouping, grouping_motif_setting, min_perfection, max_perfection, min_rep_region_length, max_rep_region_length, min_unit_size, max_unit_size, min_rep_number, max_rep_number, multi_rep_reads_setting, read_whitelist_file, read_blacklist_file, read_chunk_size):
+def process_repeats(input_path, countstable_file_name, repeatinfo_file_name, repeatinfo_gz_file_name, phobos_path, processes_number, grouping, grouping_motif_setting, min_perfection, max_perfection, min_rep_region_length, max_rep_region_length, min_unit_size, max_unit_size, min_copy_number, max_copy_number, multi_rep_reads_setting, read_whitelist_file, read_blacklist_file, read_chunk_size):
         """Starts and kills listener processes, iterates through reads file and sends chunks of reads to read_phobos_out_string function that processes them"""
 
         class ThreadsafeIterator:
@@ -456,22 +455,22 @@ def process_repeats(input_path, countstable_file_name, repeatinfo_file_name, rep
                         while True:
                                 next_line = list(itertools.islice(seqfile_open, 1))
                                 if not next_n_lines or not next_line:
-                                        yield(next_n_lines, seqfile_open.file_format, phobos_path, grouping, grouping_motif_setting, min_perfection, max_perfection, min_rep_region_length, max_rep_region_length, min_unit_size, max_unit_size, min_rep_number, max_rep_number, multi_rep_reads_setting, whitelisted_reads, blacklisted_reads, countstable_file_name, repeatinfo_file_name, repeatinfo_gz_file_name)
+                                        yield(next_n_lines, seqfile_open.file_format, phobos_path, grouping, grouping_motif_setting, min_perfection, max_perfection, min_rep_region_length, max_rep_region_length, min_unit_size, max_unit_size, min_copy_number, max_copy_number, multi_rep_reads_setting, whitelisted_reads, blacklisted_reads, countstable_file_name, repeatinfo_file_name, repeatinfo_gz_file_name)
                                         break
                                 elif seqfile_open.file_format == "FASTQ" and next_line == ["+\n"]:
                                         next_n_lines.append(next_line[0])
                                         next_n_lines.append(list(itertools.islice(seqfile_open, 1))[0])
-                                        yield(next_n_lines, "FASTQ", phobos_path, grouping, grouping_motif_setting, min_perfection, max_perfection, min_rep_region_length, max_rep_region_length, min_unit_size, max_unit_size, min_rep_number, max_rep_number, multi_rep_reads_setting, whitelisted_reads, blacklisted_reads, countstable_file_name, repeatinfo_file_name, repeatinfo_gz_file_name)
+                                        yield(next_n_lines, "FASTQ", phobos_path, grouping, grouping_motif_setting, min_perfection, max_perfection, min_rep_region_length, max_rep_region_length, min_unit_size, max_unit_size, min_copy_number, max_copy_number, multi_rep_reads_setting, whitelisted_reads, blacklisted_reads, countstable_file_name, repeatinfo_file_name, repeatinfo_gz_file_name)
                                         next_n_lines = list(itertools.islice(seqfile_open, read_chunk_size))
                                 elif seqfile_open.file_format == "FASTA" and next_line[0].startswith(">"):
-                                        yield(next_n_lines, "FASTA", phobos_path, grouping, grouping_motif_setting, min_perfection, max_perfection, min_rep_region_length, max_rep_region_length, min_unit_size, max_unit_size, min_rep_number, max_rep_number, multi_rep_reads_setting, whitelisted_reads, blacklisted_reads, countstable_file_name, repeatinfo_file_name, repeatinfo_gz_file_name)
+                                        yield(next_n_lines, "FASTA", phobos_path, grouping, grouping_motif_setting, min_perfection, max_perfection, min_rep_region_length, max_rep_region_length, min_unit_size, max_unit_size, min_copy_number, max_copy_number, multi_rep_reads_setting, whitelisted_reads, blacklisted_reads, countstable_file_name, repeatinfo_file_name, repeatinfo_gz_file_name)
                                         next_n_lines = next_line + list(itertools.islice(seqfile_open, read_chunk_size))
                                 elif next_line != []:
                                         next_n_lines.append(next_line[0])
 
         @threaded_function
         def write_repeatinfo(repeatinfo_open):
-                repeatinfo_open.write("unit\tperfection\tlength\tnormalized_length\tunit_offset\tstart_in_read\tend_in_read\trepeat_number\talignment_score\tmismatches\tinsertions\tdeletions\tNs\tread_name\tgrouping\timperfections")
+                repeatinfo_open.write("unit\tperfection\tlength\tnormalized_length\tunit_offset\tstart_in_read\tend_in_read\tcopy_number\talignment_score\tmismatches\tinsertions\tdeletions\tNs\tread_name\tgrouping\timperfections")
                 repeatinfo_open.write("\n")
 
                 for repeat in detected_repeats:
@@ -590,8 +589,8 @@ def parse_parameters():
                         subparser.add_argument("--maxrepeatlength", type=float, default="inf", dest="max_rep_region_length", help="maximum repeat region length for a repeat to be considered (for infinite, set value to 'inf') (default: %(default)s)")
                         subparser.add_argument("--minunitsize", type=float, default=0, dest="min_unit_size", help="minimum repeat unit size for a repeat to be considered (default: %(default)s)")
                         subparser.add_argument("--maxunitsize", type=float, default="inf", dest="max_unit_size", help="maximum repeat unit size for a repeat to be considered (for infinite, set value to 'inf') (default: %(default)s)")
-                        subparser.add_argument("--minrepeatnumber", type=float, default=0, dest="min_rep_number", help="minimum number of repeat units for a repeat to be considered (default: %(default)s)")
-                        subparser.add_argument("--maxrepeatnumber", type=float, default="inf", dest="max_rep_number", help="maximum number of repeat units for a repeat to be considered (default: %(default)s)")
+                        subparser.add_argument("--mincopynumber", type=float, default=0, dest="min_copy_number", help="minimum number of repeat unit copies in a repeat for a repeat to be considered (default: %(default)s)")
+                        subparser.add_argument("--maxcopynumber", type=float, default="inf", dest="max_copy_number", help="maximum number of repeat unit copies in a repeat for a repeat to be considered (default: %(default)s)")
                         subparser.add_argument("--multirepreads", type=str, default="all", dest="multi_rep_reads_setting", help="which repeat to consider in case of reads with multiple repeats (after other filters have been applied), either 'all' (consider all repeats for each read), 'none' (ignore multi repeat reads), 'longest' (only consider the longest repeat) or 'unique_longest' (for each unique repeat unit, only consider the longest) (default: %(default)s)")
                         subparser.add_argument("--readwhitelist", type=str, default=None, dest="read_whitelist_file", help="path to list of readnames that will not be filtered out, the rest is filtered (default: %(default)s)")
                         subparser.add_argument("--readblacklist", type=str, default=None, dest="read_blacklist_file", help="path to list of readnames that will be filtered out, the rest is kept (default: %(default)s)")
@@ -626,8 +625,8 @@ def main():
                 max_rep_region_length = args.max_rep_region_length
                 min_unit_size = args.min_unit_size
                 max_unit_size = args.max_unit_size
-                min_rep_number = args.min_rep_number
-                max_rep_number = args.max_rep_number
+                min_copy_number = args.min_copy_number
+                max_copy_number = args.max_copy_number
                 multi_rep_reads_setting = args.multi_rep_reads_setting
                 read_whitelist_file = args.read_whitelist_file
                 read_blacklist_file = args.read_blacklist_file
@@ -652,7 +651,7 @@ def main():
                         processes_number = int(processes_number)
                         
                 grouping = determine_grouping_setting(grouping_setting)
-                process_repeats(input_path, countstable_file_name, repeatinfo_file_name, repeatinfo_gz_file_name, phobos_path, processes_number, grouping, grouping_motif_setting, min_perfection, max_perfection, min_rep_region_length, max_rep_region_length, min_unit_size, max_unit_size, min_rep_number, max_rep_number, multi_rep_reads_setting, read_whitelist_file, read_blacklist_file, read_chunk_size)
+                process_repeats(input_path, countstable_file_name, repeatinfo_file_name, repeatinfo_gz_file_name, phobos_path, processes_number, grouping, grouping_motif_setting, min_perfection, max_perfection, min_rep_region_length, max_rep_region_length, min_unit_size, max_unit_size, min_copy_number, max_copy_number, multi_rep_reads_setting, read_whitelist_file, read_blacklist_file, read_chunk_size)
 
         elif args.program_mode == "summarizecounts":
                 input_paths = args.inputpaths
