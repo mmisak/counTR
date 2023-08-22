@@ -168,14 +168,14 @@ Repeat info files are relatively large tab-separated files (size is usually comp
 | start_in_read  | Start position of the repeat in the read |
 | end_in_read  | End position of the repeat in the read |
 | copy_number  | Number of times a repeat unit is found in a repeat. Calulated by dividing the `normalized_length` by the length of the repeat unit, number can have decimals <br><br> Example: The ATGC copy number in ATGCATGCAT is 2.5 |
-| alignment_score  | Alignment score of the repeat when compared to an ideal repeat with the same repeat unit. The alignment is performed by Phobos using its default alignment parameters, which can be found in the Phobos manual.  |
+| alignment_score  | Alignment score of the repeat when compared to an ideal repeat with the same repeat unit |
 | mismatches  | Number of mismatches in the repeat  |
 | insertions  | Number of insertions in the repeat  |
 | deletions  | Number of deletions in the repeat  |
 | Ns  | Number of bases that could not be called and are therefore denoted as 'N' in the read |
 | read_name  | Name of the read containing the detected repeat  |
 | grouping  | Group to which a repeat got assigned. If run with `--groupingmotif` set to `detected` and without providing the `--grouping` parameter (i.e. both at default settings), this parameter will simply correspond to the detected repeat unit, since repeats will only be grouped by them. Changing the aforementioned parameters can change the group a repeat gets assigned to. This group corresponds to the group by which will have its count increased in the counts table due to the detection of the current repeat |
-| imperfections  | Content Cell  |
+| imperfections  | List of all insertions/deletions/mutations. <br><br> Examples:<br><ul><li>2[20,20_21]delT - The 2 denotes that the second base in the repeat unit has been deleted, in an alignment between the detected repeat and a perfect repeat, the deletion corresponds to base 20 in the perfect repeat and is now missing between bases 20 and 21 in the detected repeat </li><li> 5[34,28_29]insA</li><li>1[7,9]C>T</ul>|
 
 **Example:**
 ```
