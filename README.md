@@ -61,16 +61,25 @@ Last, we use our read counts for a differential read count analysis. For this, a
 ## Full options
 ### STRcount processrepeats function
 ```
-STRcount.py processrepeats [-h] [--outputprefix OUTPUT_PREFIX] [--outputtype OUTPUT_TYPE]
-                                               [--processes PROCESSES_NUMBER] [--grouping GROUPING_SETTING]
-                                               [--groupingmotif {detected,rc,combine}] [--minperfection MIN_PERFECTION]
-                                               [--maxperfection MAX_PERFECTION] [--minrepeatlength MIN_REP_REGION_LENGTH]
-                                               [--maxrepeatlength MAX_REP_REGION_LENGTH] [--minunitsize MIN_UNIT_SIZE]
-                                               [--maxunitsize MAX_UNIT_SIZE] [--minrepeatnumber MIN_REP_NUMBER]
-                                               [--maxrepeatnumber MAX_REP_NUMBER] [--multirepreads MULTI_REP_READS_SETTING]
-                                               [--readwhitelist READ_WHITELIST_FILE] [--readblacklist READ_BLACKLIST_FILE]
-                                               [--readblocksize READ_BLOCK_SIZE]
-                                               inputpath outputdirectory phobospath
+STRcount.py processrepeats [-h] [--outputprefix OUTPUT_PREFIX]
+                                                                    [--outputtype OUTPUT_TYPE]
+                                                                    [--processes PROCESSES_NUMBER]
+                                                                    [--grouping GROUPING_SETTING]
+                                                                    [--groupingmotif {detected,rc,combine}]
+                                                                    [--minperfection MIN_PERFECTION]
+                                                                    [--maxperfection MAX_PERFECTION]
+                                                                    [--minrepeatlength MIN_REP_REGION_LENGTH]
+                                                                    [--maxrepeatlength MAX_REP_REGION_LENGTH]
+                                                                    [--minunitsize MIN_UNIT_SIZE]
+                                                                    [--maxunitsize MAX_UNIT_SIZE]
+                                                                    [--mincopynumber MIN_COPY_NUMBER]
+                                                                    [--maxcopynumber MAX_COPY_NUMBER]
+                                                                    [--multirepreads MULTI_REP_READS_SETTING]
+                                                                    [--readwhitelist READ_WHITELIST_FILE]
+                                                                    [--readblacklist READ_BLACKLIST_FILE]
+                                                                    [--readchunksize READ_CHUNK_SIZE]
+                                                                    [--addphobosarguments ADD_PHOBOS_ARGUMENTS]
+                                                                    inputpath outputdirectory phobospath
 
 positional arguments:
   inputpath             path to sequencing data file in fasta(.gz) or fastq(.gz) format
@@ -82,18 +91,19 @@ optional arguments:
   --outputprefix OUTPUT_PREFIX
                         prefix of output files, prefix will be taken from input file, if empty string (default: )
   --outputtype OUTPUT_TYPE
-                        output to generate, countstable.txt ('c'), repeatinfo.txt ('i'), repeatinfo.txt.gz ('g'), concatenate
-                        the letters for multiple outputs, e.g. 'cg' for countstable.txt and repeatinfo.txt.gz (default: c)
+                        output to generate, countstable.txt (c), repeatinfo.txt (i), repeatinfo.txt.gz (g), concatenate
+                        the letters for multiple outputs (default: c)
   --processes PROCESSES_NUMBER
-                        number of parallel processes to be used, to automatically set to maximum number of available logical
-                        cores, use 'auto' (default: auto)
+                        number of parallel processes to be used, to automatically set to maximum number of available
+                        logical cores, use 'auto' (default: auto)
   --grouping GROUPING_SETTING
-                        repeat grouping settings, example: 'perfection:[0,100)[100,100] length:[0,30)[30,inf]', if 'None',
-                        repeats will be only grouped by their motif (default: None)
+                        repeat grouping settings, example: 'perfection:[0,100)[100,100] length:[0,30)[30,inf]' (note
+                        the single quotation marks), if 'None', repeats will be only grouped by their motif (default:
+                        None)
   --groupingmotif {detected,rc,combine}
-                        motif to report for grouping, 'detected' to report the detected motif, 'rc' for it's reverse
-                        complement, 'combine' (combines forward and reverse complement), all motifs are reported as their
-                        lexicographically minimal string rotation (default: detected)')
+                        motif to report for grouping, report the detected motif as is (detected), its reverse
+                        complement (rc), or combine forward and reverse complement (combine), all motifs are reported
+                        as their lexicographically minimal string rotation (default: detected)')
   --minperfection MIN_PERFECTION
                         minimum perfection of a repeat to be considered (default: 0)
   --maxperfection MAX_PERFECTION
@@ -101,43 +111,52 @@ optional arguments:
   --minrepeatlength MIN_REP_REGION_LENGTH
                         minimum repeat region length for a repeat to be considered (default: 0)
   --maxrepeatlength MAX_REP_REGION_LENGTH
-                        maximum repeat region length for a repeat to be considered (for infinite, set value to 'inf')
+                        maximum repeat region length for a repeat to be considered (for infinite, set value to: inf)
                         (default: inf)
   --minunitsize MIN_UNIT_SIZE
                         minimum repeat unit size for a repeat to be considered (default: 0)
   --maxunitsize MAX_UNIT_SIZE
-                        maximum repeat unit size for a repeat to be considered (for infinite, set value to 'inf') (default:
-                        inf)
-  --minrepeatnumber MIN_REP_NUMBER
-                        minimum number of repeat units for a repeat to be considered (default: 0)
-  --maxrepeatnumber MAX_REP_NUMBER
-                        maximum number of repeat units for a repeat to be considered (default: inf)
+                        maximum repeat unit size for a repeat to be considered (for infinite, set value to: inf)
+                        (default: inf)
+  --mincopynumber MIN_COPY_NUMBER
+                        minimum number of repeat unit copies in a repeat for a repeat to be considered (default: 0)
+  --maxcopynumber MAX_COPY_NUMBER
+                        maximum number of repeat unit copies in a repeat for a repeat to be considered (for infinite,
+                        set value to: inf) (default: inf)
   --multirepreads MULTI_REP_READS_SETTING
                         which repeat to consider in case of reads with multiple repeats (after other filters have been
-                        applied), either 'all' (consider all repeats for each read), 'none' (ignore multi repeat reads),
-                        'longest' (only consider the longest repeat) or 'unique_longest' (for each unique repeat unit, only
-                        consider the longest) (default: all)
+                        applied), either 'all' (consider all repeats for each read), 'none' (ignore multi repeat
+                        reads), 'longest' (only consider the longest repeat) or 'unique_longest' (for each unique
+                        repeat unit, only consider the longest) (default: all)
   --readwhitelist READ_WHITELIST_FILE
                         path to list of readnames that will not be filtered out, the rest is filtered (default: None)
   --readblacklist READ_BLACKLIST_FILE
                         path to list of readnames that will be filtered out, the rest is kept (default: None)
-  --readblocksize READ_BLOCK_SIZE
+  --readchunksize READ_CHUNK_SIZE
                         approximate number of lines that are analyzed at once in a (parallel) process (default: 50000)
+  --addphobosarguments ADD_PHOBOS_ARGUMENTS
+                        add arguments to the default Phobos call (which is run with: --outputFormat 1 --reportUnit 1
+                        --printRepeatSeqMode 2), example: '--indelScore -4;--mismatchScore -5' (note the single
+                        quotation marks). Warning: This command can lead to unexpected behavior and crashes, if used
+                        incorrectly (default: None)
 ```
 ### STRcount summarizecounts function
 ```
-strcount2.6.2_rewrite.py summarizecounts [-h] [--samplenames SAMPLE_NAMES [SAMPLE_NAMES ...]]
-                                                inputpaths [inputpaths ...] outputfile
+STRcount.py summarizecounts
+       [-h] [--samplenames SAMPLE_NAMES [SAMPLE_NAMES ...]]
+       outputfile inputpaths [inputpaths ...]
 
 positional arguments:
-  inputpaths            countstable.txt files to be summarized into a count matrix
   outputfile            path to output count matrix.
+  inputpaths            countstable.txt files to be summarized into a count
+                        matrix
 
 optional arguments:
   -h, --help            show this help message and exit
   --samplenames SAMPLE_NAMES [SAMPLE_NAMES ...]
-                        list of sample names to be used in the resulting header in the same order as input files. If not set,
-                        input file names will be used (default: None)')
+                        list of sample names to be used in the resulting
+                        header in the same order as input files. If not set,
+                        input file names will be used (default: None)
 ```
 
 ## STRcount output files
@@ -186,7 +205,7 @@ Most of the values contained are directly taken from the Phobos output and their
 | Ns  | Number of bases that could not be called and are therefore denoted as 'N' in the read. |
 | read_name  | Name of the read containing the detected repeat. |
 | grouping  | Group to which a repeat got assigned. If run with `--groupingmotif` set to `detected` and without providing the `--grouping` parameter (i.e. both at default settings), this parameter will simply correspond to the detected repeat unit, since repeats will only be grouped by them. Changing the aforementioned parameters can change the group a repeat gets assigned to. This group corresponds to the group by which will have its count increased in the counts table due to the detection of the current repeat. |
-| imperfections  | List of all imperfections (insertions/deletions/mutations) detected in a repeat. <br><br> **Examples:**<br><ul><li>2[20,20_21]delT - The 2 denotes that the second base in the repeat unit (e.g. for an ATT repeat, it would be the first T) has been deleted, in an alignment between the detected repeat and a perfect repeat, the deletion corresponds to base 20 in the perfect repeat and is now missing between bases 20 and 21 in the detected repeat. </li><li> 5[34,28_29]insA</li><li>1[7,9]C>T - C to T mutation occured in the first base of the detected repeat unit at base 7 in the perfect repeat and base 9 in the detected repeat. </ul>|
+| imperfections  | List of all imperfections (insertions/deletions/mutations) detected in a repeat. __Feature currently disabled.__ <br><br> **Examples:**<br><ul><li>2[20,20_21]delT - The 2 denotes that the second base in the repeat unit (e.g. for an ATT repeat, it would be the first T) has been deleted, in an alignment between the detected repeat and a perfect repeat, the deletion corresponds to base 20 in the perfect repeat and is now missing between bases 20 and 21 in the detected repeat. </li><li> 5[34,28_29]insA</li><li>1[7,9]C>T - C to T mutation occured in the first base of the detected repeat unit at base 7 in the perfect repeat and base 9 in the detected repeat. </ul>|
 
 ### Count matrix files
 
