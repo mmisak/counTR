@@ -7,7 +7,7 @@ import multiprocessing
 import itertools
 import re
 import threading
-
+import contextlib
 
 class Repeat:
         """Class storing repeats including their attributes"""
@@ -110,47 +110,48 @@ def compute_repeat_unit_offset(repeat_unit, alignment_optimal_repeat):
 
 def interpret_alignment(alignment_repeat_in_read, alignment_optimal_repeat, repeat_unit_offset, repeat_unit, start_in_read, end_in_read):
         """Extracts positional information of repeat imperfections and repeat unit offset from the alignment to the ideal repeat provided by Phobos output"""
-        match_mismatch_offset_counter = 0
-        insertion_offset_counter = 0
-        deletion_offset_counter = 0
-        repeat_imperfections = []
-        current_insertion = ""
-        current_deletion = ""
-   
-        for i in range(len(alignment_optimal_repeat)):
-                if alignment_optimal_repeat[i] == "-":
-                        current_insertion += alignment_repeat_in_read[i]
-                        insertion_offset_counter += 1
-                elif alignment_repeat_in_read[i] == "-":
-                        current_deletion +=  alignment_optimal_repeat[i]
-                        deletion_offset_counter += 1
-                else: #if match or mismatch, note: indel conditions do not need to be run again after loop is done because last nucleotide in alignment is never an indel
-                        if (current_deletion != ""):
-                                del_start_in_rep_unit = (i - insertion_offset_counter - len(current_deletion) + repeat_unit_offset )%len(repeat_unit) + 1
-                                del_end_in_rep_unit = (i - insertion_offset_counter - repeat_unit_offset )%len(repeat_unit) + 1
-                                del_start_in_rep = i - insertion_offset_counter - len(current_deletion)
-                                del_end_in_rep = i - insertion_offset_counter
-                                del_pos_in_read = start_in_read + i - deletion_offset_counter - len(current_deletion) + 1
-                                repeat_imperfections.append(str(del_start_in_rep_unit) + "_" + str(del_end_in_rep_unit) + "[" +
-                                                            str(del_start_in_rep) + "_" + str(del_end_in_rep) +
-                                                            "," + str(del_pos_in_read) + "]" + "del" + current_deletion)
-                                current_deletion = ""
-                        if (current_insertion != ""):
-                                ins_pos_in_rep_unit = (i - insertion_offset_counter - len(current_insertion) + repeat_unit_offset )%len(repeat_unit) + 1
-                                ins_pos_in_rep = i - insertion_offset_counter - len(current_insertion)
-                                ins_start_in_read = start_in_read + i - deletion_offset_counter - len(current_deletion) + 1
-                                ins_end_in_read = start_in_read + i - deletion_offset_counter + 1
-                                repeat_imperfections.append(str(ins_pos_in_rep_unit) + "[" + str(ins_pos_in_rep) +
-                                                            "," + str(ins_start_in_read) + "_" + str(ins_end_in_read) + "]" + "ins" + current_insertion)
-                                current_insertion = ""
-
-                        if alignment_repeat_in_read[i] != alignment_optimal_repeat[i]:
-                                mismatch_pos_in_rep_unit = (i - insertion_offset_counter - 1 + repeat_unit_offset )%len(repeat_unit) + 1
-                                mismatch_pos_in_rep = i - insertion_offset_counter + 1
-                                mismatch_pos_in_read = start_in_read + i - deletion_offset_counter
-                                repeat_imperfections.append(str(mismatch_pos_in_rep_unit) + "[" + str(mismatch_pos_in_rep) +
-                                        "," + str(mismatch_pos_in_read) + "]" + alignment_optimal_repeat[i] + ">" + alignment_repeat_in_read[i])
-        return(repeat_imperfections)
+##        match_mismatch_offset_counter = 0
+##        insertion_offset_counter = 0
+##        deletion_offset_counter = 0
+##        repeat_imperfections = []
+##        current_insertion = ""
+##        current_deletion = ""
+##   
+##        for i in range(len(alignment_optimal_repeat)):
+##                if alignment_optimal_repeat[i] == "-":
+##                        current_insertion += alignment_repeat_in_read[i]
+##                        insertion_offset_counter += 1
+##                elif alignment_repeat_in_read[i] == "-":
+##                        current_deletion +=  alignment_optimal_repeat[i]
+##                        deletion_offset_counter += 1
+##                else: #if match or mismatch, note: indel conditions do not need to be run again after loop is done because last nucleotide in alignment is never an indel
+##                        if (current_deletion != ""):
+##                                del_position_repeat_unit = (i - insertion_offset_counter - len(current_deletion) + repeat_unit_offset )%len(repeat_unit) + 1
+##                                del_position_perfect_repeat = i - insertion_offset_counter
+##                                del_start_detected_repeat = start_in_read + i - deletion_offset_counter - len(current_deletion) + 1
+##                                del_end_detected_repeat = start_in_read + i - deletion_offset_counter + 1
+##                                repeat_imperfections.append(str(del_position_repeat_unit) + "[" + str(del_position_perfect_repeat) + "," +
+##                                                            str(del_start_detected_repeat) + "_" + str(del_end_detected_repeat) + "]" + "del" + current_deletion)
+##                                current_deletion = ""
+##                        if (current_insertion != ""):
+##                                ins_start_repeat_unit = (i - insertion_offset_counter - len(current_insertion) + repeat_unit_offset )%len(repeat_unit) + 1
+##                                ins_end_repeat_unit = (i - insertion_offset_counter - len(current_insertion) + repeat_unit_offset )%len(repeat_unit) + 1
+##                                #ins_pos_in_rep_unit = (i - insertion_offset_counter - len(current_insertion) + repeat_unit_offset )%len(repeat_unit) + 1
+##                                ins_pos_in_rep = i - insertion_offset_counter - len(current_insertion)
+##                                ins_start_in_read = start_in_read + i - deletion_offset_counter - len(current_deletion) + 1
+##                                ins_end_in_read = start_in_read + i - deletion_offset_counter + 1
+##                                repeat_imperfections.append(str(ins_pos_in_rep_unit) + "[" + str(ins_pos_in_rep) +
+##                                                            "," + str(ins_start_in_read) + "_" + str(ins_end_in_read) + "]" + "ins" + current_insertion)
+##                                current_insertion = ""
+##
+##                        if alignment_repeat_in_read[i] != alignment_optimal_repeat[i]:
+##                                mismatch_pos_in_rep_unit = (i - insertion_offset_counter - 1 + repeat_unit_offset )%len(repeat_unit) + 1
+##                                mismatch_pos_in_rep = i - insertion_offset_counter + 1
+##                                mismatch_pos_in_read = start_in_read + i - deletion_offset_counter
+##                                repeat_imperfections.append(str(mismatch_pos_in_rep_unit) + "[" + str(mismatch_pos_in_rep) +
+##                                        "," + str(mismatch_pos_in_read) + "]" + alignment_optimal_repeat[i] + ">" + alignment_repeat_in_read[i])
+##        return(repeat_imperfections)
+        return([])
 
 def create_dir_if_not_present(path):
         """Creates the directory at the given path if not already present"""
@@ -327,8 +328,7 @@ def read_phobos_out_string(arguments):
                         value = str(value)
                 return(value)
 
-        reads, reads_file_type, phobos_path, grouping, grouping_motif_setting, min_perfection, max_perfection, min_rep_region_length, max_rep_region_length, min_unit_size, max_unit_size, min_copy_number, max_copy_number, multi_rep_reads_setting, whitelisted_reads, blacklisted_reads, countstable_file_name, repeatinfo_file_name, repeatinfo_gz_file_name = arguments
-
+        reads, reads_file_type, phobos_path, grouping, grouping_motif_setting, min_perfection, max_perfection, min_rep_region_length, max_rep_region_length, min_unit_size, max_unit_size, min_copy_number, max_copy_number, multi_rep_reads_setting, whitelisted_reads, blacklisted_reads, countstable_file_name, repeatinfo_file_name, repeatinfo_gz_file_name, add_phobos_arguments = arguments
         attribute_mapping = {"unit":"unit", "bp":"length", "BP":"normalized_repeat_length", "pt":"alignment_score", "%":"perfection",  "mis":"mismatches", "ins":"insertions", "del":"deletions", "N":"N"}
 
         if reads_file_type == "FASTA":
@@ -336,8 +336,15 @@ def read_phobos_out_string(arguments):
         else:
                 fasta_line_list = convert_fq_line_list_to_fa(reads)
                 fasta = "".join(fasta_line_list)
-        p = subprocess.Popen([phobos_path, "/dev/stdin", "/dev/stdout", "--outputFormat 1", "--reportUnit 1", "--printRepeatSeqMode 2"], stdin=subprocess.PIPE, stdout=subprocess.PIPE, stderr=subprocess.PIPE)
-        phobos_out, phobos_err = p.communicate(input=str.encode(fasta))
+
+        phobos_arguments = [phobos_path, "/dev/stdin", "/dev/stdout", "--outputFormat 1", "--reportUnit 1", "--printRepeatSeqMode 2"]
+
+        if add_phobos_arguments != None:
+                phobos_arguments.extend(add_phobos_arguments.split(";"))
+
+        phobos_process = subprocess.Popen(phobos_arguments, stdin=subprocess.PIPE, stdout=subprocess.PIPE, stderr=subprocess.PIPE)
+
+        phobos_out, phobos_err = phobos_process.communicate(input=str.encode(fasta))
         phobos_output_string = phobos_out.decode()
         
         detected_repeats = []
@@ -420,7 +427,7 @@ def read_phobos_out_string(arguments):
                                         
         return(repeat_counts, detected_repeats)
 
-def process_repeats(input_path, countstable_file_name, repeatinfo_file_name, repeatinfo_gz_file_name, phobos_path, processes_number, grouping, grouping_motif_setting, min_perfection, max_perfection, min_rep_region_length, max_rep_region_length, min_unit_size, max_unit_size, min_copy_number, max_copy_number, multi_rep_reads_setting, read_whitelist_file, read_blacklist_file, read_chunk_size):
+def process_repeats(input_path, countstable_file_name, repeatinfo_file_name, repeatinfo_gz_file_name, phobos_path, processes_number, grouping, grouping_motif_setting, min_perfection, max_perfection, min_rep_region_length, max_rep_region_length, min_unit_size, max_unit_size, min_copy_number, max_copy_number, multi_rep_reads_setting, read_whitelist_file, read_blacklist_file, read_chunk_size, add_phobos_arguments):
         """Starts and kills listener processes, iterates through reads file and sends chunks of reads to read_phobos_out_string function that processes them"""
 
         class ThreadsafeIterator:
@@ -455,15 +462,15 @@ def process_repeats(input_path, countstable_file_name, repeatinfo_file_name, rep
                         while True:
                                 next_line = list(itertools.islice(seqfile_open, 1))
                                 if not next_n_lines or not next_line:
-                                        yield(next_n_lines, seqfile_open.file_format, phobos_path, grouping, grouping_motif_setting, min_perfection, max_perfection, min_rep_region_length, max_rep_region_length, min_unit_size, max_unit_size, min_copy_number, max_copy_number, multi_rep_reads_setting, whitelisted_reads, blacklisted_reads, countstable_file_name, repeatinfo_file_name, repeatinfo_gz_file_name)
+                                        yield(next_n_lines, seqfile_open.file_format, phobos_path, grouping, grouping_motif_setting, min_perfection, max_perfection, min_rep_region_length, max_rep_region_length, min_unit_size, max_unit_size, min_copy_number, max_copy_number, multi_rep_reads_setting, whitelisted_reads, blacklisted_reads, countstable_file_name, repeatinfo_file_name, repeatinfo_gz_file_name, add_phobos_arguments)
                                         break
                                 elif seqfile_open.file_format == "FASTQ" and next_line == ["+\n"]:
                                         next_n_lines.append(next_line[0])
                                         next_n_lines.append(list(itertools.islice(seqfile_open, 1))[0])
-                                        yield(next_n_lines, "FASTQ", phobos_path, grouping, grouping_motif_setting, min_perfection, max_perfection, min_rep_region_length, max_rep_region_length, min_unit_size, max_unit_size, min_copy_number, max_copy_number, multi_rep_reads_setting, whitelisted_reads, blacklisted_reads, countstable_file_name, repeatinfo_file_name, repeatinfo_gz_file_name)
+                                        yield(next_n_lines, "FASTQ", phobos_path, grouping, grouping_motif_setting, min_perfection, max_perfection, min_rep_region_length, max_rep_region_length, min_unit_size, max_unit_size, min_copy_number, max_copy_number, multi_rep_reads_setting, whitelisted_reads, blacklisted_reads, countstable_file_name, repeatinfo_file_name, repeatinfo_gz_file_name, add_phobos_arguments)
                                         next_n_lines = list(itertools.islice(seqfile_open, read_chunk_size))
                                 elif seqfile_open.file_format == "FASTA" and next_line[0].startswith(">"):
-                                        yield(next_n_lines, "FASTA", phobos_path, grouping, grouping_motif_setting, min_perfection, max_perfection, min_rep_region_length, max_rep_region_length, min_unit_size, max_unit_size, min_copy_number, max_copy_number, multi_rep_reads_setting, whitelisted_reads, blacklisted_reads, countstable_file_name, repeatinfo_file_name, repeatinfo_gz_file_name)
+                                        yield(next_n_lines, "FASTA", phobos_path, grouping, grouping_motif_setting, min_perfection, max_perfection, min_rep_region_length, max_rep_region_length, min_unit_size, max_unit_size, min_copy_number, max_copy_number, multi_rep_reads_setting, whitelisted_reads, blacklisted_reads, countstable_file_name, repeatinfo_file_name, repeatinfo_gz_file_name, add_phobos_arguments)
                                         next_n_lines = next_line + list(itertools.islice(seqfile_open, read_chunk_size))
                                 elif next_line != []:
                                         next_n_lines.append(next_line[0])
@@ -494,7 +501,6 @@ def process_repeats(input_path, countstable_file_name, repeatinfo_file_name, rep
         @threaded_function
         def write_counts(repeats_by_group, output_file):
                 """Writes counts table for a sample"""
-                create_dir_if_not_present(output_file)      
                 with CustomOpen(output_file, "w+") as outfile_open:
                         for group, group_count in sorted(repeats_by_group.items()):
                                 outfile_open.write(group + "\t" + str(group_count) + "\n")
@@ -503,26 +509,28 @@ def process_repeats(input_path, countstable_file_name, repeatinfo_file_name, rep
         blacklisted_reads = read_list_file(read_blacklist_file)
 
         with multiprocessing.Pool(processes_number) as pool:
-                if countstable_file_name != None:
-                        counter = {}
-                        create_dir_if_not_present(countstable_file_name)
-                        countstable_open = CustomOpen(countstable_file_name, "w+")
-                if repeatinfo_file_name != None:
-                        create_dir_if_not_present(repeatinfo_file_name)
-                        repeatinfo_open = CustomOpen(repeatinfo_file_name, "w+")
-                if repeatinfo_gz_file_name != None:
-                        create_dir_if_not_present(repeatinfo_gz_file_name)
-                        repeatinfo_gz_open = CustomOpen(repeatinfo_gz_file_name, "w+")
-                for chunk in pool.imap_unordered(read_phobos_out_string, get_seqfile_chunks()):
-                        chunk_repeat_counts, detected_repeats = chunk
-                        if repeatinfo_file_name != None:
-                                write_repeatinfo(repeatinfo_open)
-                        if repeatinfo_gz_file_name != None:
-                                write_repeatinfo(repeatinfo_gz_open)
+                with contextlib.ExitStack() as exitstack:
                         if countstable_file_name != None:
-                                update_counts(counter, chunk_repeat_counts)
+                                counter = {}
+                                create_dir_if_not_present(countstable_file_name)
+                                countstable_open = exitstack.enter_context(CustomOpen(countstable_file_name, "w+"))
+                        if repeatinfo_file_name != None:
+                                create_dir_if_not_present(repeatinfo_file_name)
+                                repeatinfo_open = exitstack.enter_context(CustomOpen(repeatinfo_file_name, "w+"))
+                        if repeatinfo_gz_file_name != None:
+                                create_dir_if_not_present(repeatinfo_gz_file_name)
+                                repeatinfo_gz_open = exitstack.enter_context(CustomOpen(repeatinfo_gz_file_name, "w+"))
+                        for chunk in pool.imap_unordered(read_phobos_out_string, get_seqfile_chunks()):
+                                chunk_repeat_counts, detected_repeats = chunk
+                                if repeatinfo_file_name != None:
+                                        write_repeatinfo(repeatinfo_open)
+                                if repeatinfo_gz_file_name != None:
+                                        write_repeatinfo(repeatinfo_gz_open)
+                                if countstable_file_name != None:
+                                        update_counts(counter, chunk_repeat_counts)
                                 
         if countstable_file_name != None:
+                create_dir_if_not_present(countstable_file_name)
                 write_counts(counter, countstable_file_name)               
                                 
 def read_countstables(count_files, sample_names):
@@ -579,27 +587,28 @@ def parse_parameters():
                         subparser.add_argument("outputdirectory", type=str, help="directory where the output will be written to")
                         subparser.add_argument("phobospath", type=str, help="path to Phobos executable")
                         subparser.add_argument("--outputprefix", type=str, default="", dest="output_prefix", help="prefix of output files, prefix will be taken from input file, if empty string (default: %(default)s)")
-                        subparser.add_argument("--outputtype", type=str, default="c", dest="output_type", help="output to generate, countstable.txt ('c'), repeatinfo.txt ('i'), repeatinfo.txt.gz ('g'), concatenate the letters for multiple outputs, e.g. 'cg' for countstable.txt and repeatinfo.txt.gz (default: %(default)s)")
+                        subparser.add_argument("--outputtype", type=str, default="c", dest="output_type", help="output to generate, countstable.txt (c), repeatinfo.txt (i), repeatinfo.txt.gz (g), concatenate the letters for multiple outputs (default: %(default)s)")
                         subparser.add_argument("--processes", type=str, default="auto", dest="processes_number", help="number of parallel processes to be used, to automatically set to maximum number of available logical cores, use 'auto' (default: %(default)s)")
-                        subparser.add_argument("--grouping", type=str, default=None, dest="grouping_setting", help="repeat grouping settings, example: 'perfection:[0,100)[100,100] length:[0,30)[30,inf]', if 'None', repeats will be only grouped by their motif (default: %(default)s)")
-                        subparser.add_argument("--groupingmotif", type=str, default="detected", dest="grouping_motif_setting", choices=['detected', 'rc', 'combine'], help="motif to report for grouping, 'detected' to report the detected motif, 'rc' for it's reverse complement, 'combine' (combines forward and reverse complement), all motifs are reported as their lexicographically minimal string rotation (default: %(default)s)')")
+                        subparser.add_argument("--grouping", type=str, default=None, dest="grouping_setting", help="repeat grouping settings, example: 'perfection:[0,100)[100,100] length:[0,30)[30,inf]' (note the single quotation marks), if 'None', repeats will be only grouped by their motif (default: %(default)s)")
+                        subparser.add_argument("--groupingmotif", type=str, default="detected", dest="grouping_motif_setting", choices=['detected', 'rc', 'combine'], help="motif to report for grouping, report the detected motif as is (detected), its reverse complement (rc), or combine forward and reverse complement (combine), all motifs are reported as their lexicographically minimal string rotation (default: %(default)s)')")
                         subparser.add_argument("--minperfection", type=float, default=0, dest="min_perfection", help="minimum perfection of a repeat to be considered (default: %(default)s)")
                         subparser.add_argument("--maxperfection", type=float, default=100, dest="max_perfection", help="maximum perfection of a repeat to be considered (default: %(default)s)")
                         subparser.add_argument("--minrepeatlength", type=float, default=0, dest="min_rep_region_length", help="minimum repeat region length for a repeat to be considered (default: %(default)s)")
-                        subparser.add_argument("--maxrepeatlength", type=float, default="inf", dest="max_rep_region_length", help="maximum repeat region length for a repeat to be considered (for infinite, set value to 'inf') (default: %(default)s)")
+                        subparser.add_argument("--maxrepeatlength", type=float, default="inf", dest="max_rep_region_length", help="maximum repeat region length for a repeat to be considered (for infinite, set value to: inf) (default: %(default)s)")
                         subparser.add_argument("--minunitsize", type=float, default=0, dest="min_unit_size", help="minimum repeat unit size for a repeat to be considered (default: %(default)s)")
-                        subparser.add_argument("--maxunitsize", type=float, default="inf", dest="max_unit_size", help="maximum repeat unit size for a repeat to be considered (for infinite, set value to 'inf') (default: %(default)s)")
+                        subparser.add_argument("--maxunitsize", type=float, default="inf", dest="max_unit_size", help="maximum repeat unit size for a repeat to be considered (for infinite, set value to: inf) (default: %(default)s)")
                         subparser.add_argument("--mincopynumber", type=float, default=0, dest="min_copy_number", help="minimum number of repeat unit copies in a repeat for a repeat to be considered (default: %(default)s)")
-                        subparser.add_argument("--maxcopynumber", type=float, default="inf", dest="max_copy_number", help="maximum number of repeat unit copies in a repeat for a repeat to be considered (default: %(default)s)")
+                        subparser.add_argument("--maxcopynumber", type=float, default="inf", dest="max_copy_number", help="maximum number of repeat unit copies in a repeat for a repeat to be considered (for infinite, set value to: inf) (default: %(default)s)")
                         subparser.add_argument("--multirepreads", type=str, default="all", dest="multi_rep_reads_setting", help="which repeat to consider in case of reads with multiple repeats (after other filters have been applied), either 'all' (consider all repeats for each read), 'none' (ignore multi repeat reads), 'longest' (only consider the longest repeat) or 'unique_longest' (for each unique repeat unit, only consider the longest) (default: %(default)s)")
                         subparser.add_argument("--readwhitelist", type=str, default=None, dest="read_whitelist_file", help="path to list of readnames that will not be filtered out, the rest is filtered (default: %(default)s)")
                         subparser.add_argument("--readblacklist", type=str, default=None, dest="read_blacklist_file", help="path to list of readnames that will be filtered out, the rest is kept (default: %(default)s)")
                         subparser.add_argument("--readchunksize", type=int, default=50000, dest="read_chunk_size", help="approximate number of lines that are analyzed at once in a (parallel) process (default: %(default)s)")
+                        subparser.add_argument("--addphobosarguments", type=str, default=None, dest="add_phobos_arguments", help="add arguments to the default Phobos call (which is run with: --outputFormat 1 --reportUnit 1 --printRepeatSeqMode 2), example: '--indelScore -4;--mismatchScore -5' (note the single quotation marks). Warning: This command can lead to unexpected behavior and crashes, if used incorrectly (default: %(default)s)")
 
                 elif subparser == parser_summarizecounts:
-                        subparser.add_argument("inputpaths", type=str, nargs="+", help="countstable.txt files to be summarized into a count matrix")
                         subparser.add_argument("outputfile", type=str, help="path to output count matrix.")
-                        subparser.add_argument("--samplenames", type=str, default=None, nargs="+", dest="sample_names", help="list of sample names to be used in the resulting header in the same order as input files. If not set, input file names will be used (default: %(default)s)')")
+                        subparser.add_argument("inputpaths", type=str, nargs="+", help="countstable.txt files to be summarized into a count matrix")
+                        subparser.add_argument("--samplenames", type=str, default=None, nargs="+", dest="sample_names", help="list of sample names to be used in the resulting header in the same order as input files. If not set, input file names will be used (default: %(default)s)")
 
         if len(sys.argv) < 2:
                 parser.print_help()
@@ -631,6 +640,7 @@ def main():
                 read_whitelist_file = args.read_whitelist_file
                 read_blacklist_file = args.read_blacklist_file
                 read_chunk_size = args.read_chunk_size
+                add_phobos_arguments = args.add_phobos_arguments
 
                 output_prefix = determine_output_location(input_path, output_directory, output_prefix)
                 output_flags = list(output_type)
@@ -651,7 +661,7 @@ def main():
                         processes_number = int(processes_number)
                         
                 grouping = determine_grouping_setting(grouping_setting)
-                process_repeats(input_path, countstable_file_name, repeatinfo_file_name, repeatinfo_gz_file_name, phobos_path, processes_number, grouping, grouping_motif_setting, min_perfection, max_perfection, min_rep_region_length, max_rep_region_length, min_unit_size, max_unit_size, min_copy_number, max_copy_number, multi_rep_reads_setting, read_whitelist_file, read_blacklist_file, read_chunk_size)
+                process_repeats(input_path, countstable_file_name, repeatinfo_file_name, repeatinfo_gz_file_name, phobos_path, processes_number, grouping, grouping_motif_setting, min_perfection, max_perfection, min_rep_region_length, max_rep_region_length, min_unit_size, max_unit_size, min_copy_number, max_copy_number, multi_rep_reads_setting, read_whitelist_file, read_blacklist_file, read_chunk_size, add_phobos_arguments)
 
         elif args.program_mode == "summarizecounts":
                 input_paths = args.inputpaths
