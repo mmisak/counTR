@@ -198,7 +198,7 @@ Most of the values contained are directly taken from the Phobos output and their
 | start_in_read  | Start position of the repeat in the read. |
 | end_in_read  | End position of the repeat in the read. |
 | copy_number  | Number of times a repeat unit is found in a repeat. Calulated by dividing the `normalized_length` by the length of the repeat unit, number can have decimals. <br><br>**Example:** The ATGC copy number in ATGCATGCAT is 2.5. |
-| alignment_score  | Alignment score of the repeat when compared to an ideal repeat with the same repeat unit. |
+| alignment_score  | Alignment score of the repeat when compared to an ideal repeat consisting of the detected repeat unit. |
 | mismatches  | Number of mismatches in the repeat. |
 | insertions  | Number of insertions in the repeat. |
 | deletions  | Number of deletions in the repeat. |
