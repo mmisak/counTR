@@ -52,8 +52,6 @@ python STRcount.py summarizecounts sample1.countstable.txt sample2.countstable.t
 ### Read count normalization and differential repeat content analysis
 Last, we use our read count matrix for read count normalization and differential analysis. For this, analyses using edgeR, DESeq2, limma voom or Wilcoxon rank sum test are suitable.
 
-**Example (using EdgeR)**:
-
 ## Full options
 ### STRcount processrepeats function
 ```
