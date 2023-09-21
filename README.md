@@ -53,105 +53,39 @@ python STRcount.py summarizecounts sample1.countstable.txt sample2.countstable.t
 Last, we use our read count matrix for read count normalization and differential analysis. For this, analyses using edgeR, DESeq2, limma voom or Wilcoxon rank sum test are suitable.
 
 ## Full options
-### STRcount processrepeats function
-```
-STRcount.py processrepeats [-h] [--outputprefix OUTPUT_PREFIX]
-                                                                    [--outputtype OUTPUT_TYPE]
-                                                                    [--processes PROCESSES_NUMBER]
-                                                                    [--grouping GROUPING_SETTING]
-                                                                    [--groupingmotif {detected,rc,combine}]
-                                                                    [--minperfection MIN_PERFECTION]
-                                                                    [--maxperfection MAX_PERFECTION]
-                                                                    [--minrepeatlength MIN_REP_REGION_LENGTH]
-                                                                    [--maxrepeatlength MAX_REP_REGION_LENGTH]
-                                                                    [--minunitsize MIN_UNIT_SIZE]
-                                                                    [--maxunitsize MAX_UNIT_SIZE]
-                                                                    [--mincopynumber MIN_COPY_NUMBER]
-                                                                    [--maxcopynumber MAX_COPY_NUMBER]
-                                                                    [--multirepreads MULTI_REP_READS_SETTING]
-                                                                    [--readwhitelist READ_WHITELIST_FILE]
-                                                                    [--readblacklist READ_BLACKLIST_FILE]
-                                                                    [--readchunksize READ_CHUNK_SIZE]
-                                                                    [--addphobosarguments ADD_PHOBOS_ARGUMENTS]
-                                                                    inputpath outputdirectory phobospath
+### STRcount processrepeats parameters
 
-positional arguments:
-  inputpath             path to sequencing data file in fasta(.gz) or fastq(.gz) format
-  outputdirectory       directory where the output will be written to
-  phobospath            path to Phobos executable
+| Parameter          | Description   |
+| ------------------ | ------------- |
+| inputpath          | Path to sequencing data file in fasta(.gz) or fastq(.gz) format. |
+| outputdirectory    | Directory where the output will be written to. |
+| phobospath         | Path to Phobos executable. |
+| outputprefix       | Prefix of output files, prefix will be taken from input file, if empty string (default: ) |
+| outputtype         | Output to generate, countstable.txt (c), repeatinfo.txt (i), repeatinfo.txt.gz (g), concatenate the letters for multiple outputs (default: c) |
+| processes          | Number of parallel processes to be used, to automatically set to maximum number of available logical cores, use 'auto' (default: auto) |
+| grouping           | Repeat grouping settings, example: 'perfection:[0,100)[100,100] length:[0,30)[30,inf]' (note the single quotation marks), if 'None', repeats will be only grouped by their motif (default: None) |
+| groupingmotif      | Motif to report for grouping, report the detected motif as is (detected), its reverse complement (rc), or combine forward and reverse complement (combine), all motifs are reported as their lexicographically minimal string rotation (default: detected)') |
+| minperfection      | Minimum perfection of a repeat to be considered (default: 0) |
+| maxperfection      | Maximum perfection of a repeat to be considered (default: 100) |
+| minrepeatlength    | Minimum repeat region length for a repeat to be considered (default: 0) |
+| maxrepeatlength    | Maximum repeat region length for a repeat to be considered (for infinite, set value to: inf) (default: inf) |
+| minunitsize        | Minimum repeat unit size for a repeat to be considered (default: 0) |
+| maxunitsize        | Maximum repeat unit size for a repeat to be considered (for infinite, set value to: inf) (default: inf) |
+| mincopynumber      | Minimum number of repeat unit copies in a repeat for a repeat to be considered (default: 0) |
+| maxcopynumber      | Maximum number of repeat unit copies in a repeat for a repeat to be considered (for infinite, set value to: inf) (default: inf) |
+| multirepreads      | Which repeat to consider in case of reads with multiple repeats (after other filters have been applied), either 'all' (consider all repeats for each read), 'none' (ignore multi repeat reads), 'longest' (only consider the longest repeat) or 'unique_longest' (for each unique repeat unit, only consider the longest) (default: all) |
+| readwhitelist      | Path to list of readnames that will not be filtered out, the rest is filtered (default: None)
+| readblacklist      | Path to list of readnames that will be filtered out, the rest is kept (default: None)
+| readchunksize      | Approximate number of lines that are analyzed at once in a (parallel) process (default: 50000)
+| addphobosarguments | Add arguments to the default Phobos call (which is run with: --outputFormat 1 --reportUnit 1 --printRepeatSeqMode 2) <br><br>**Example:**  '--indelScore -4;--mismatchScore -5' (note the single quotation marks) to change the parameters Phobos uses to align detected repeats to ideal repeats <br><br>**Warning:** This command changes the way Phobos generates its output before it is passed to STRcount and can result in unexpected behavior, use with caution (default: None)
 
-optional arguments:
-  -h, --help            show this help message and exit
-  --outputprefix OUTPUT_PREFIX
-                        prefix of output files, prefix will be taken from input file, if empty string (default: )
-  --outputtype OUTPUT_TYPE
-                        output to generate, countstable.txt (c), repeatinfo.txt (i), repeatinfo.txt.gz (g), concatenate
-                        the letters for multiple outputs (default: c)
-  --processes PROCESSES_NUMBER
-                        number of parallel processes to be used, to automatically set to maximum number of available
-                        logical cores, use 'auto' (default: auto)
-  --grouping GROUPING_SETTING
-                        repeat grouping settings, example: 'perfection:[0,100)[100,100] length:[0,30)[30,inf]' (note
-                        the single quotation marks), if 'None', repeats will be only grouped by their motif (default:
-                        None)
-  --groupingmotif {detected,rc,combine}
-                        motif to report for grouping, report the detected motif as is (detected), its reverse
-                        complement (rc), or combine forward and reverse complement (combine), all motifs are reported
-                        as their lexicographically minimal string rotation (default: detected)')
-  --minperfection MIN_PERFECTION
-                        minimum perfection of a repeat to be considered (default: 0)
-  --maxperfection MAX_PERFECTION
-                        maximum perfection of a repeat to be considered (default: 100)
-  --minrepeatlength MIN_REP_REGION_LENGTH
-                        minimum repeat region length for a repeat to be considered (default: 0)
-  --maxrepeatlength MAX_REP_REGION_LENGTH
-                        maximum repeat region length for a repeat to be considered (for infinite, set value to: inf)
-                        (default: inf)
-  --minunitsize MIN_UNIT_SIZE
-                        minimum repeat unit size for a repeat to be considered (default: 0)
-  --maxunitsize MAX_UNIT_SIZE
-                        maximum repeat unit size for a repeat to be considered (for infinite, set value to: inf)
-                        (default: inf)
-  --mincopynumber MIN_COPY_NUMBER
-                        minimum number of repeat unit copies in a repeat for a repeat to be considered (default: 0)
-  --maxcopynumber MAX_COPY_NUMBER
-                        maximum number of repeat unit copies in a repeat for a repeat to be considered (for infinite,
-                        set value to: inf) (default: inf)
-  --multirepreads MULTI_REP_READS_SETTING
-                        which repeat to consider in case of reads with multiple repeats (after other filters have been
-                        applied), either 'all' (consider all repeats for each read), 'none' (ignore multi repeat
-                        reads), 'longest' (only consider the longest repeat) or 'unique_longest' (for each unique
-                        repeat unit, only consider the longest) (default: all)
-  --readwhitelist READ_WHITELIST_FILE
-                        path to list of readnames that will not be filtered out, the rest is filtered (default: None)
-  --readblacklist READ_BLACKLIST_FILE
-                        path to list of readnames that will be filtered out, the rest is kept (default: None)
-  --readchunksize READ_CHUNK_SIZE
-                        approximate number of lines that are analyzed at once in a (parallel) process (default: 50000)
-  --addphobosarguments ADD_PHOBOS_ARGUMENTS
-                        add arguments to the default Phobos call (which is run with: --outputFormat 1 --reportUnit 1
-                        --printRepeatSeqMode 2), example: '--indelScore -4;--mismatchScore -5' (note the single
-                        quotation marks). Warning: This command can lead to unexpected behavior and crashes, if used
-                        incorrectly (default: None)
-```
-### STRcount summarizecounts function
-```
-STRcount.py summarizecounts
-       [-h] [--samplenames SAMPLE_NAMES [SAMPLE_NAMES ...]]
-       outputfile inputpaths [inputpaths ...]
+### STRcount summarizecounts parameters
 
-positional arguments:
-  outputfile            path to output count matrix.
-  inputpaths            countstable.txt files to be summarized into a count
-                        matrix
-
-optional arguments:
-  -h, --help            show this help message and exit
-  --samplenames SAMPLE_NAMES [SAMPLE_NAMES ...]
-                        list of sample names to be used in the resulting
-                        header in the same order as input files. If not set,
-                        input file names will be used (default: None)
-```
+| Parameter     | Description                                                                                                                                         |
+| ------------- | --------------------------------------------------------------------------------------------------------------------------------------------------- |
+| outputfile    | path to output count matrix |
+| inputpaths    | countstable.txt files to be summarized into a count matrix |
+| samplenames   | list of sample names to be used in the resulting header in the same order as input files. If not set, input file names will be used (default: None) |
 
 ## STRcount output files
 ### Counts table files
@@ -182,24 +116,24 @@ AG  100.0  29  29  0  22  50  14.5  27  0  0  0  0  SRR3277954.15  AG <perfectio
 ```
 Most of the values contained are directly taken from the Phobos output and their detailed definition can be looked up in the manual of the Phobos package. The following table briefly describes the meaning of each column:
 
-| Column  | Description  |
-| ------------- | ------------- |
-| unit  | Repeat unit of the detected repeat. This will always correspond to the lexicographically minimal string rotation of the repeat as it was detected in the read. |
-| perfection  | A value between 0 and 100 describing the perfection of the repeat. Perfection is calculated by Phobos using the following formula: ${ normalized\\_length − mismatches − deletions − insertions − Ns \over normalized\\_length}$ |
-| length  | Length of the whole detected repeat in a read. |
+| Column             | Description                                                                                                                          |
+| ------------------ | ------------------------------------------------------------------------------------------------------------------------------------ |
+| unit               | Repeat unit of the detected repeat. This will always correspond to the lexicographically minimal string rotation of the repeat as it was detected in the read. |
+| perfection         | A value between 0 and 100 describing the perfection of the repeat. Perfection is calculated by Phobos using the following formula: ${ normalized\\_length − mismatches − deletions − insertions − Ns \over normalized\\_length}$ |
+| length             | Length of the whole detected repeat in a read. |
 | normalized_length  | Detected repeat length minus insertions, plus deletions. According to the Phobos manual, this value can be interpreted as _the number of nucleotides in the tandem repeat sequence before insertions and deletions lead to its degeneration_.
-| unit_offset  | Offset of the first completed repeat unit in respect to its lexicographically minimal string rotation. <br><br>**Example:** a detected repeat might look like this: TTAGGGTTAGGGTTAGGG, the first fully completed repeat unit if read from the start is TTAGGG. STRcount will label this as an AGGGTT repeat (in lexicographically minimal string rotation form). To go from TTAGGG to AGGGTT, the string has to be rotated forward 4 times, which is the value of the offset. |
-| start_in_read  | Start position of the repeat in the read. |
-| end_in_read  | End position of the repeat in the read. |
-| copy_number  | Number of times a repeat unit is found in a repeat. Calulated by dividing the `normalized_length` by the length of the repeat unit, number can have decimals. <br><br>**Example:** The ATGC copy number in ATGCATGCAT is 2.5. |
-| alignment_score  | Alignment score of the repeat when compared to an ideal repeat consisting of the detected repeat unit. |
-| mismatches  | Number of mismatches in the repeat. |
-| insertions  | Number of insertions in the repeat. |
-| deletions  | Number of deletions in the repeat. |
-| Ns  | Number of bases that could not be called and are therefore denoted as 'N' in the read. |
-| read_name  | Name of the read containing the detected repeat. |
-| grouping  | Group to which a repeat got assigned. If run with `--groupingmotif` set to `detected` and without providing the `--grouping` parameter (i.e. both at default settings), this parameter will simply correspond to the detected repeat unit, since repeats will only be grouped by them. Changing the aforementioned parameters can change the group a repeat gets assigned to. This group corresponds to the group by which will have its count increased in the counts table due to the detection of the current repeat. |
-| imperfections  | List of all imperfections (insertions/deletions/mutations) detected in a repeat. __Feature currently disabled.__ <br><br> **Examples:**<br><ul><li>2[20,20_21]delT - The 2 denotes that the second base in the repeat unit (e.g. for an ATT repeat, it would be the first T) has been deleted, in an alignment between the detected repeat and a perfect repeat, the deletion corresponds to base 20 in the perfect repeat and is now missing between bases 20 and 21 in the detected repeat. </li><li>1[7,9]C>T - C to T mutation occured in the first base of the detected repeat unit at base 7 in the perfect repeat and base 9 in the detected repeat. </ul>|
+| unit_offset        | Offset of the first completed repeat unit in respect to its lexicographically minimal string rotation. <br><br>**Example:** a detected repeat might look like this: TTAGGGTTAGGGTTAGGG, the first fully completed repeat unit if read from the start is TTAGGG. STRcount will label this as an AGGGTT repeat (in lexicographically minimal string rotation form). To go from TTAGGG to AGGGTT, the string has to be rotated forward 4 times, which is the value of the offset. |
+| start_in_read      | Start position of the repeat in the read. |
+| end_in_read        | End position of the repeat in the read. |
+| copy_number        | Number of times a repeat unit is found in a repeat. Calulated by dividing the `normalized_length` by the length of the repeat unit, number can have decimals. <br><br>**Example:** The ATGC copy number in ATGCATGCAT is 2.5. |
+| alignment_score    | Alignment score of the repeat when compared to an ideal repeat consisting of the detected repeat unit. |
+| mismatches         | Number of mismatches in the repeat. |
+| insertions         | Number of insertions in the repeat. |
+| deletions          | Number of deletions in the repeat. |
+| Ns                 | Number of bases that could not be called and are therefore denoted as 'N' in the read. |
+| read_name          | Name of the read containing the detected repeat. |
+| grouping           | Group to which a repeat got assigned. If run with `--groupingmotif` set to `detected` and without providing the `--grouping` parameter (i.e. both at default settings), this parameter will simply correspond to the detected repeat unit, since repeats will only be grouped by them. Changing the aforementioned parameters can change the group a repeat gets assigned to. This group corresponds to the group by which will have its count increased in the counts table due to the detection of the current repeat. |
+| imperfections      | List of all imperfections (insertions/deletions/mutations) detected in a repeat. __Feature currently disabled.__ <br><br> **Examples:**<br><ul><li>2[20,20_21]delT - The 2 denotes that the second base in the repeat unit (e.g. for an ATT repeat, it would be the first T) has been deleted, in an alignment between the detected repeat and a perfect repeat, the deletion corresponds to base 20 in the perfect repeat and is now missing between bases 20 and 21 in the detected repeat. </li><li>1[7,9]C>T - C to T mutation occured in the first base of the detected repeat unit at base 7 in the perfect repeat and base 9 in the detected repeat. </ul>|
 
 ### Count matrix files
 
