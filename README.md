@@ -2,20 +2,20 @@
 ## Overview
 <p align="justify">
 STRcount is a read mapping-free method to detect differential short tandem repeat (STR) content between different groups of quantitative sequencing data samples. STRcount scans raw reads for STRs using Phobos, optionally filters them and then groups detected repeats and outputs their counts in a counts table, allowing for read count normalization and subsequent identification of differential tandem repeat content between groups of samples. Possible applications include the unbiased detection of STR enrichment in DNA/chromatin profiling sequencing (e.g. ChIP-seq, CUT&Run, CUT&Tag, DIP-seq) or comparison of STR content in whole genome sequencing samples.
-
-Note: STRcount is not affiliated with Phobos or its developer Christoph Mayer. For STRcount to work, Phobos must be obtained from the official website (download link below in the "Requirements" section). Phobos can be used freely for academic and non-commercial use according to its license as described here: https://www.ruhr-uni-bochum.de/ecoevo/cm/cm_phobos.htm
 </p>
 
 ## Features
-- STRcount offers unbiased de novo detection of differential short tandem repeats in quantitative NGS data
-- Works independent of reference genomes, raw reads are the only input data
+- Unbiased de novo detection of differential short tandem repeat content in quantitative sequencing data
+- Independent of reference genomes
 - Repeats can be grouped by repeat length and/or perfection prior to differential comparison
-- Output can be used to generate PCA plots, sample correlation heatmaps, volcano plots and more
 
 ## Requirements
-- Linux - STRcount was tested on Ubuntu 18.04., macOS systems might work but were not tested thus far
+- Linux - STRcount was tested on Ubuntu 18.04, macOS systems might work but were not tested thus far
 - Phobos binary - STRcount was tested with the binary `phobos_64_libstdc++6` of the package `phobos-v3.3.12-linux`. Phobos is freely available for academic research and can be downloaded here: https://www.ruhr-uni-bochum.de/spezzoo/cm/cm_phobos_download.htm
 - Python 3.2 or newer - STRcount was tested on Python 3.9.7
+
+## Installation
+As of now, it is sufficient to download the STRcount.py and use the program as described below. The file can be obtained from this repository or using this link: https://raw.githubusercontent.com/mmisak/STRcount/main/STRcount.py
 
 ## Quick start
 ### Running STRcount processrepeats
