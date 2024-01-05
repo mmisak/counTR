@@ -1,7 +1,7 @@
 # counTR
 ## Overview
 <p align="justify">
-counTR is a read mapping-free method to detect differential short tandem repeat (STR) content between different groups of quantitative sequencing data samples. counTR scans raw reads for STRs using Phobos, optionally filters them and then groups detected repeats and outputs their counts in a counts table, allowing for read count normalization and subsequent identification of differential tandem repeat content between groups of samples. Possible applications include the unbiased detection of STR enrichment in DNA/chromatin profiling sequencing (e.g. ChIP-seq, CUT&Run, CUT&Tag, DIP-seq) or comparison of STR content in whole genome sequencing samples.
+counTR is a read mapping-free method to detect differential tandem repeat content between different groups of quantitative sequencing data samples. counTR scans raw reads for tandem repeats using Phobos, optionally filters them and then groups detected repeats and outputs their counts in a counts table, allowing for read count normalization and subsequent identification of differential tandem repeat content between groups of samples. Possible applications include the unbiased detection of tandem repeat enrichment in DNA/chromatin profiling sequencing (e.g. ChIP-seq, CUT&Run, CUT&Tag, DIP-seq) or comparison of tandem repeat content in whole genome sequencing samples.
 </p>
 
 ## Features
