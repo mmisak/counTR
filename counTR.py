@@ -14,6 +14,7 @@ class Repeat:
         def __init__(self, repeat_properties, masked=False):
                 self.unit = repeat_properties["unit"]
                 self.read_name = repeat_properties["read_name"]
+                self.read_length = repeat_properties["read_length"]
                 self.start_in_read = repeat_properties["start_in_read"]
                 self.end_in_read = repeat_properties["end_in_read"]
                 self.imperfections = repeat_properties["imperfections"]
@@ -29,10 +30,11 @@ class Repeat:
                 self.unit_length = len(repeat_properties["unit"])
                 self.copy_number = self.normalized_repeat_length/self.unit_length
                 self.masked = masked
-                self.groups = None
-                self.grouping_strings = None
+                self.groups = None #groups attribute of a repeat can e.g. look like this: (('perfection', ('[', 0.0, 100.0, ')')), ('length', ('[', 0.0, 40.0, ')')))
+                self.grouping_strings = None #can e.g. look like this: ['AACCCT <perfection:[100.0,100.0] length:[40.0,80.0)>'], warning: list can have multiple elements for some repeats
 
         def group_repeat(self, grouping, grouping_motif_setting):
+                """Adds 'groups' and 'grouping_string' to repeat instance"""
 
                 def determine_grouping_repeat_motif(grouping_motif_setting):                        
                         if grouping_motif_setting == "detected":
@@ -110,48 +112,56 @@ def compute_repeat_unit_offset(repeat_unit, alignment_optimal_repeat):
 
 def interpret_alignment(alignment_repeat_in_read, alignment_optimal_repeat, repeat_unit_offset, repeat_unit, start_in_read, end_in_read):
         """Extracts positional information of repeat imperfections and repeat unit offset from the alignment to the ideal repeat provided by Phobos output"""
-##        match_mismatch_offset_counter = 0
-##        insertion_offset_counter = 0
-##        deletion_offset_counter = 0
-##        repeat_imperfections = []
-##        current_insertion = ""
-##        current_deletion = ""
-##   
-##        for i in range(len(alignment_optimal_repeat)):
-##                if alignment_optimal_repeat[i] == "-":
-##                        current_insertion += alignment_repeat_in_read[i]
-##                        insertion_offset_counter += 1
-##                elif alignment_repeat_in_read[i] == "-":
-##                        current_deletion +=  alignment_optimal_repeat[i]
-##                        deletion_offset_counter += 1
-##                else: #if match or mismatch, note: indel conditions do not need to be run again after loop is done because last nucleotide in alignment is never an indel
-##                        if (current_deletion != ""):
-##                                del_position_repeat_unit = (i - insertion_offset_counter - len(current_deletion) + repeat_unit_offset )%len(repeat_unit) + 1
-##                                del_position_perfect_repeat = i - insertion_offset_counter
-##                                del_start_detected_repeat = start_in_read + i - deletion_offset_counter - len(current_deletion) + 1
-##                                del_end_detected_repeat = start_in_read + i - deletion_offset_counter + 1
-##                                repeat_imperfections.append(str(del_position_repeat_unit) + "[" + str(del_position_perfect_repeat) + "," +
-##                                                            str(del_start_detected_repeat) + "_" + str(del_end_detected_repeat) + "]" + "del" + current_deletion)
-##                                current_deletion = ""
-##                        if (current_insertion != ""):
-##                                ins_start_repeat_unit = (i - insertion_offset_counter - len(current_insertion) + repeat_unit_offset )%len(repeat_unit) + 1
-##                                ins_end_repeat_unit = (i - insertion_offset_counter - len(current_insertion) + repeat_unit_offset )%len(repeat_unit) + 1
-##                                #ins_pos_in_rep_unit = (i - insertion_offset_counter - len(current_insertion) + repeat_unit_offset )%len(repeat_unit) + 1
-##                                ins_pos_in_rep = i - insertion_offset_counter - len(current_insertion)
-##                                ins_start_in_read = start_in_read + i - deletion_offset_counter - len(current_deletion) + 1
-##                                ins_end_in_read = start_in_read + i - deletion_offset_counter + 1
-##                                repeat_imperfections.append(str(ins_pos_in_rep_unit) + "[" + str(ins_pos_in_rep) +
-##                                                            "," + str(ins_start_in_read) + "_" + str(ins_end_in_read) + "]" + "ins" + current_insertion)
-##                                current_insertion = ""
-##
-##                        if alignment_repeat_in_read[i] != alignment_optimal_repeat[i]:
-##                                mismatch_pos_in_rep_unit = (i - insertion_offset_counter - 1 + repeat_unit_offset )%len(repeat_unit) + 1
-##                                mismatch_pos_in_rep = i - insertion_offset_counter + 1
-##                                mismatch_pos_in_read = start_in_read + i - deletion_offset_counter
-##                                repeat_imperfections.append(str(mismatch_pos_in_rep_unit) + "[" + str(mismatch_pos_in_rep) +
-##                                        "," + str(mismatch_pos_in_read) + "]" + alignment_optimal_repeat[i] + ">" + alignment_repeat_in_read[i])
-##        return(repeat_imperfections)
-        return([])
+        repeat_imperfections = [] #sequence variants in observed repeats in relation to optimal repeat
+        insertion_offset_counter = 0
+        deletion_offset_counter = 0
+        current_insertion = ""
+        current_deletion = ""
+        for i in range(len(alignment_optimal_repeat)):
+                if alignment_optimal_repeat[i] == "-":
+                        current_insertion += alignment_repeat_in_read[i]
+                        insertion_offset_counter += 1
+                elif alignment_repeat_in_read[i] == "-":
+                        current_deletion +=  alignment_optimal_repeat[i]
+                        deletion_offset_counter += 1
+                else: #if match or mismatch, note: indel conditions do not need to be run again after loop is done because last nucleotide in alignment is never an indel
+                        if (current_insertion != ""):
+                                ins_flank_end_repeat = (i + 1) - insertion_offset_counter
+                                ins_flank_start_repeat =  ins_flank_end_repeat - 1 
+                                ins_flank_end_repeat_unit = (ins_flank_end_repeat + repeat_unit_offset - 1)%len(repeat_unit) + 1 #not sure about +1
+                                ins_flank_start_repeat_unit = (ins_flank_start_repeat + repeat_unit_offset - 1)%len(repeat_unit) + 1 #not sure about +1
+                                ins_end_in_read_repeat = i - deletion_offset_counter + (start_in_read -1)
+                                ins_start_in_read_repeat = ins_end_in_read_repeat - len(current_insertion) + 1
+                                repeat_imperfections.append("["  + str(ins_flank_start_repeat_unit) + "_" + str(ins_flank_end_repeat_unit) + "ins" + current_insertion + "," +
+                                                            str(ins_flank_start_repeat) + "_" + str(ins_flank_end_repeat) + "ins" + current_insertion + "," +
+                                                            str(ins_start_in_read_repeat) + "_" + str(ins_end_in_read_repeat) +  "del" + current_insertion + "]")
+                                current_insertion = ""
+                        if (current_deletion != ""):
+                                del_flank_end_in_read_repeat = (i + 1) - deletion_offset_counter + (start_in_read -1)
+                                del_flank_start_in_read_repeat = del_flank_end_in_read_repeat - 1
+                                del_end_repeat = i - insertion_offset_counter
+                                del_start_repeat = del_end_repeat - (len(current_deletion)) + 1
+                                del_end_repeat_unit = (del_end_repeat + repeat_unit_offset - 1)%len(repeat_unit) + 1 
+                                del_start_repeat_unit = (del_start_repeat + repeat_unit_offset - 1)%len(repeat_unit) + 1
+                                
+                                repeat_imperfections.append("["  + str(del_start_repeat_unit) + "_" + str(del_end_repeat_unit) + "del" + current_deletion + "," +
+                                                            str(del_start_repeat) + "_" + str(del_end_repeat) + "del" + current_deletion + "," +
+                                                            str(del_flank_start_in_read_repeat) + "_" + str(del_flank_end_in_read_repeat) + "ins" + current_deletion + "]")
+                                current_deletion = ""
+                        if alignment_repeat_in_read[i] != alignment_optimal_repeat[i]:
+                                mismatch_pos_repeat_unit = (i - insertion_offset_counter + repeat_unit_offset )%len(repeat_unit) + 1
+                                mismatch_pos_repeat = (i + 1) - insertion_offset_counter
+                                mismatch_pos_read_repeat = i + start_in_read - deletion_offset_counter
+                                repeat_imperfections.append("["  + str(mismatch_pos_repeat_unit) + alignment_optimal_repeat[i] + ">" + alignment_repeat_in_read[i] + "," +
+                                                                str(mismatch_pos_repeat) + alignment_optimal_repeat[i] + ">" + alignment_repeat_in_read[i] +"," +
+                                                                str(mismatch_pos_read_repeat) + alignment_repeat_in_read[i] + ">" + alignment_optimal_repeat[i] + "]")
+        return(repeat_imperfections)
+
+
+
+
+
+
 
 def create_dir_if_not_present(path):
         """Creates the directory at the given path if not already present"""
@@ -258,21 +268,37 @@ class CustomOpen:
                         return(gzip.open(input_file, "wt+"))
                 elif not self.gzipped and mode in ("w+", "wt+"):
                         return(open(input_file, "wt+"))                
-        
+
+def add_fasta_read_identifiers(fasta):
+        """Adds a unique ID (line no.) for each read to its name, avoids problems with (hypothetical) reads with same names, ID is removed later"""
+        fasta_line_list = []
+        read_lengths = {}
+        for line_counter, line in enumerate(fasta):
+                if line.strip(): #if line not empty/tabs/spaces
+                        if line.startswith(">"):
+                                read_name = line.split()[0][1:] + "[ID:" + str(line_counter) + "]"
+                                fasta_line_list.append(">" + read_name + "\n")
+                        else:
+                                fasta_line_list.append(line)
+                                read_lengths[read_name] = len(remove_suffix(line, "\n"))
+        return(fasta_line_list, read_lengths)
+
 def convert_fq_line_list_to_fa(fastq_line_list):
-        """Creates an internal fasta file from a list of lines in fastq format"""
+        """Creates an internal fasta file from a list of lines in fastq format and adds a unique ID (line no.) for each read to its name, avoids problems with (hypothetical) reads with same names, ID is removed later"""
         fasta_line_list = []
         current_read_block_lines = 0
-        for line in fastq_line_list:
+        for line_counter, line in enumerate(fastq_line_list):
                 if line.strip(): #if line not empty/tabs/spaces
                         current_read_block_lines += 1
                         if line.startswith("@") and current_read_block_lines == 1:
-                                fasta_line_list.append(">" + line[1:].split()[0] + "\n")
+                                read_name = line[1:].split()[0] + "[ID:" + str(line_counter) + "]"
+                                fasta_line_list.append(">" + read_name + "\n") #adds a unique ID (line no.) for each read, avoids problems with (hypothetical) reads with same names, is removed later
                         elif current_read_block_lines == 2:
                                 fasta_line_list.append(line)
+                                read_lengths[read_name] = len(remove_suffix(line, "\n"))
                         elif current_read_block_lines == 4:
                                 current_read_block_lines = 0
-        return(fasta_line_list)
+        return(fasta_line_list, read_lengths)
 
 def filter_to_longest_repeats(current_read_repeats, multi_rep_reads_setting):
         """Filters repeats detected in a single read depending on user settings"""
@@ -332,9 +358,10 @@ def read_phobos_out_string(arguments):
         attribute_mapping = {"unit":"unit", "bp":"length", "BP":"normalized_repeat_length", "pt":"alignment_score", "%":"perfection",  "mis":"mismatches", "ins":"insertions", "del":"deletions", "N":"N"}
 
         if reads_file_type == "FASTA":
-                fasta = "".join(reads)
+                fasta_with_read_identifiers, read_lengths = add_fasta_read_identifiers(reads)
+                fasta = "".join(fasta_with_read_identifiers)
         else:
-                fasta_line_list = convert_fq_line_list_to_fa(reads)
+                fasta_line_list, read_lengths = convert_fq_line_list_to_fa(reads)
                 fasta = "".join(fasta_line_list)
 
         phobos_arguments = [phobos_path, "/dev/stdin", "/dev/stdout", "--outputFormat 1", "--reportUnit 1", "--printRepeatSeqMode 2"]
@@ -356,24 +383,25 @@ def read_phobos_out_string(arguments):
                 if line.startswith(">"):
                         repeat_properties = {}
                         read_name = remove_suffix(remove_prefix(line, ">"), "\n")
-                        repeat_properties["read_name"] = read_name
+                        repeat_properties["read_length"] = read_lengths[read_name]
+                        repeat_properties["read_name"] = read_name[:read_name.rindex("[")] #remove (internal) index from read name
                         if current_read != read_name and current_read != "":
                                 filter_to_longest_repeats(current_read_repeats, multi_rep_reads_setting)
                                 for repeat in current_read_repeats:
                                         if not (repeatinfo_file_name == None and repeatinfo_gz_file_name == None):
                                                 detected_repeats.append(repeat)
                                         if not (countstable_file_name == None or repeat.masked):
-                                                if grouping!=None and repeat.groups!=None:
+                                                if grouping != None and repeat.groups != None:
                                                         for group_index, group in enumerate(repeat.groups):
                                                                 if repeat.grouping_strings[group_index] in repeat_counts:
                                                                         repeat_counts[repeat.grouping_strings[group_index]] += 1
                                                                 else:
                                                                         repeat_counts[repeat.grouping_strings[group_index]] = 1
-                                                else:
+                                                elif grouping == None:
                                                         if repeat.unit in repeat_counts:
-                                                                repeat_counts[repeat.unit] += 1
+                                                                repeat_counts[repeat.grouping_strings[0]] += 1
                                                         else:
-                                                                repeat_counts[repeat.unit] = 1
+                                                                repeat_counts[repeat.grouping_strings[0]] = 1
                         current_read_repeats = []
                         current_read = read_name                                
                 else:
@@ -419,11 +447,11 @@ def read_phobos_out_string(arguments):
                                                 repeat_counts[repeat.grouping_strings[group_index]] += 1
                                         else:
                                                 repeat_counts[repeat.grouping_strings[group_index]] = 1
-                        else:
+                        elif grouping == None:
                                 if repeat.unit in repeat_counts:
-                                        repeat_counts[repeat.unit] += 1
+                                        repeat_counts[repeat.grouping_strings[0]] += 1
                                 else:
-                                        repeat_counts[repeat.unit] = 1
+                                        repeat_counts[repeat.grouping_strings[0]] = 1
                                         
         return(repeat_counts, detected_repeats)
 
@@ -477,7 +505,7 @@ def process_repeats(input_path, countstable_file_name, repeatinfo_file_name, rep
 
         @threaded_function
         def write_repeatinfo(repeatinfo_open):
-                repeatinfo_open.write("unit\tperfection\tlength\tnormalized_length\tunit_offset\tstart_in_read\tend_in_read\tcopy_number\talignment_score\tmismatches\tinsertions\tdeletions\tNs\tread_name\tgrouping\timperfections")
+                repeatinfo_open.write("unit\tperfection\tlength\tnormalized_length\tunit_offset\tstart_in_read\tend_in_read\tcopy_number\tread_length\talignment_score\tmismatches\tinsertions\tdeletions\tNs\tread_name\tgrouping\timperfections")
                 repeatinfo_open.write("\n")
 
                 for repeat in detected_repeats:
@@ -485,7 +513,7 @@ def process_repeats(input_path, countstable_file_name, repeatinfo_file_name, rep
                                 repeatinfo_open.write("#")
                         repeatinfo_open.write(repeat.unit + "\t" + str(repeat.perfection) + "\t" + str(repeat.length) + "\t" + str(repeat.normalized_repeat_length) + "\t" +
                                              str(repeat.unit_offset) + "\t" + str(repeat.start_in_read) + "\t" + str(repeat.end_in_read) +
-                                            "\t" + str(round(repeat.copy_number,3)) + "\t" + str(repeat.alignment_score) + "\t" + str(repeat.mismatches) + "\t" +
+                                            "\t" + str(round(repeat.copy_number,3)) + "\t" + str(repeat.read_length) + "\t" + str(repeat.alignment_score) + "\t" + str(repeat.mismatches) + "\t" +
                                             str(repeat.insertions) + "\t" + str(repeat.deletions) + "\t" + str(repeat.n) + "\t" + repeat.read_name + "\t" +
                                             (str(repeat.grouping_strings)[1:-1].replace("'","").replace(", ", ";") if not repeat.grouping_strings == [] else "none") + "\t" +
                                             (str(repeat.imperfections)[1:-1].replace("'","").replace(", ",";") if not repeat.imperfections == [] else "none") + "\n")
@@ -575,7 +603,7 @@ def write_count_matrix(ordered_samples, repeat_counts, output_file):
 
 def parse_parameters():
         """Returns parsed command line parameters"""
-        parser = argparse.ArgumentParser(description="trcount is a program that de novo detects, filters and groups tandem repeats and generates a tandem repeat count matrix for NGS samples. ")
+        parser = argparse.ArgumentParser(description="counTR is a program that de novo detects, filters and groups tandem repeats and generates a tandem repeat count matrix for NGS samples. ")
         subparsers = parser.add_subparsers(dest="program_mode")
 
         parser_processrepeats = subparsers.add_parser("processrepeats", help="runs trcount from start to end")
@@ -604,7 +632,6 @@ def parse_parameters():
                         subparser.add_argument("--readblacklist", type=str, default=None, dest="read_blacklist_file", help="path to list of readnames that will be filtered out, the rest is kept (default: %(default)s)")
                         subparser.add_argument("--readchunksize", type=int, default=50000, dest="read_chunk_size", help="approximate number of lines that are analyzed at once in a (parallel) process (default: %(default)s)")
                         subparser.add_argument("--addphobosarguments", type=str, default=None, dest="add_phobos_arguments", help="add arguments to the default Phobos call (which is run with: --outputFormat 1 --reportUnit 1 --printRepeatSeqMode 2), example: '--indelScore -4;--mismatchScore -5' (note the single quotation marks). Warning: This command can lead to unexpected behavior and crashes, if used incorrectly (default: %(default)s)")
-
                 elif subparser == parser_summarizecounts:
                         subparser.add_argument("outputfile", type=str, help="path to output count matrix.")
                         subparser.add_argument("inputpaths", type=str, nargs="+", help="countstable.txt files to be summarized into a count matrix")
