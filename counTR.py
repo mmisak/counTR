@@ -286,6 +286,7 @@ def add_fasta_read_identifiers(fasta):
 def convert_fq_line_list_to_fa(fastq_line_list):
         """Creates an internal fasta file from a list of lines in fastq format and adds a unique ID (line no.) for each read to its name, avoids problems with (hypothetical) reads with same names, ID is removed later"""
         fasta_line_list = []
+        read_lengths = {}
         current_read_block_lines = 0
         for line_counter, line in enumerate(fastq_line_list):
                 if line.strip(): #if line not empty/tabs/spaces
