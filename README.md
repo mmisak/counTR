@@ -41,12 +41,12 @@ In this example, we are running the `processrepeats` function on a sample called
 ### Running counTR summarizecounts
 After obtaining `.countstable.txt` files for all of our samples, we summarize the results into a count matrix that can be used for downstream analysis:
 ```
-python counTR.py summarizecounts SAMPLES [...] OUTPUT_FILE
+python counTR.py summarizecounts OUTPUT_FILE SAMPLES[...]
 ```
 
 **Example**:
 ```
-python counTR.py summarizecounts sample1.countstable.txt sample2.countstable.txt control1.countstable.txt control2.countstable.txt experiment.countmatrix.txt
+python counTR.py summarizecounts experiment.countmatrix.txt sample1.countstable.txt sample2.countstable.txt control1.countstable.txt control2.countstable.txt
 ```
 
 ### Read count normalization and differential repeat content analysis
