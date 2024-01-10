@@ -41,7 +41,7 @@ In this example, we are running the `processrepeats` function on a sample called
 ### Running counTR summarizecounts
 After obtaining `.countstable.txt` files for all of our samples, we summarize the results into a count matrix that can be used for downstream analysis:
 ```
-python counTR.py summarizecounts OUTPUT_FILE SAMPLES[...]
+python counTR.py summarizecounts OUTPUT_FILE SAMPLES [...]
 ```
 
 **Example**:
