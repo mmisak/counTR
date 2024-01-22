@@ -61,7 +61,7 @@ Last, we use our read count matrix for read count normalization and differential
 | outputdirectory    | Directory where the output will be written to. |
 | phobospath         | Path to Phobos executable. |
 | outputprefix       | Prefix of output files, prefix will be taken from input file, if empty string (default: ) |
-| outputtype         | Output to generate, countstable.txt (c), repeatinfo.txt (i), repeatinfo.txt.gz (g), concatenate the letters for multiple outputs (default: c) |
+| outputtype         | Output to generate, countstable.txt (c), repeatinfo.txt (i), repeatinfo.txt.gz (g), concatenate the letters for multiple outputs, e.g. ci (countstable.txt and repeatinfo.txt) (default: c) |
 | processes          | Number of parallel processes to be used, to automatically set to maximum number of available logical cores, use 'auto' (default: auto) |
 | grouping           | Repeat grouping settings, example: 'perfection:[0,100)[100,100] length:[0,30)[30,inf]' (note the single quotation marks), if 'None', repeats will be only grouped by their motif (default: None) |
 | groupingmotif      | Motif to report for grouping, report the detected motif as is (detected), its reverse complement (rc), or combine forward and reverse complement (combine), all motifs are reported as their lexicographically minimal string rotation (default: detected)') |
