@@ -226,7 +226,7 @@ class CustomOpen:
                         return(self)
                 elif self.file_format == "repeatinfo": #needs to return file such that it can be written
                         return(self.file)
-        def __exit__(self, exc_type, exc_val, exc_tb):
+        def __exit__(self, *args):
                 self.file.close()
         def __iter__(self):
                 return(self.file)
@@ -370,10 +370,10 @@ def read_phobos_out_string(arguments):
         if add_phobos_arguments != None:
                 phobos_arguments.extend(add_phobos_arguments.split(";"))
 
-        phobos_process = subprocess.Popen(phobos_arguments, stdin=subprocess.PIPE, stdout=subprocess.PIPE, stderr=subprocess.PIPE)
+        phobos_process = subprocess.Popen(phobos_arguments, stdin=subprocess.PIPE, stdout=subprocess.PIPE, stderr=subprocess.PIPE, text=True)
 
-        phobos_out, phobos_err = phobos_process.communicate(input=str.encode(fasta))
-        phobos_output_string = phobos_out.decode()
+        phobos_out, phobos_err = phobos_process.communicate(input=fasta)
+        phobos_output_string = phobos_out
         
         detected_repeats = []
         repeat_counts = {}
@@ -475,14 +475,6 @@ def process_repeats(input_path, countstable_file_name, repeatinfo_file_name, rep
                 def generator(*a, **kw):
                         return ThreadsafeIterator(function(*a, **kw))
                 return generator
-
-        def threaded_function(function):
-                """Decorator that multithreads the target function with the given parameters. Returns the thread created for the function"""
-                def wrapper(*args, **kwargs):
-                        thread = threading.Thread(target=function, args=args)
-                        thread.start()
-                        return thread
-                return wrapper
        
         @threadsafe_generator
         def get_seqfile_chunks():
@@ -504,11 +496,7 @@ def process_repeats(input_path, countstable_file_name, repeatinfo_file_name, rep
                                 elif next_line != []:
                                         next_n_lines.append(next_line[0])
 
-        @threaded_function
-        def write_repeatinfo(repeatinfo_open):
-                repeatinfo_open.write("unit\tperfection\tlength\tnormalized_length\tunit_offset\tstart_in_read\tend_in_read\tcopy_number\tread_length\talignment_score\tmismatches\tinsertions\tdeletions\tNs\tread_name\tgrouping\timperfections")
-                repeatinfo_open.write("\n")
-
+        def write_repeatinfo(repeatinfo_open, detected_repeats):
                 for repeat in detected_repeats:
                         if repeat.masked:
                                 repeatinfo_open.write("#")
@@ -519,15 +507,13 @@ def process_repeats(input_path, countstable_file_name, repeatinfo_file_name, rep
                                             (str(repeat.grouping_strings)[1:-1].replace("'","").replace(", ", ";") if not repeat.grouping_strings == [] else "none") + "\t" +
                                             (str(repeat.imperfections)[1:-1].replace("'","").replace(", ",";") if not repeat.imperfections == [] else "none") + "\n")
 
-        @threaded_function
         def update_counts(counter, repeat_counts):
                 for group, count in repeat_counts.items():
                         if group in counter:
                                 counter[group] += count
                         else:
                                 counter[group] = count
-                                
-        @threaded_function
+
         def write_counts(repeats_by_group, output_file):
                 """Writes counts table for a sample"""
                 with CustomOpen(output_file, "w+") as outfile_open:
@@ -546,15 +532,17 @@ def process_repeats(input_path, countstable_file_name, repeatinfo_file_name, rep
                         if repeatinfo_file_name != None:
                                 create_dir_if_not_present(repeatinfo_file_name)
                                 repeatinfo_open = exitstack.enter_context(CustomOpen(repeatinfo_file_name, "w+"))
+                                repeatinfo_open.write("unit\tperfection\tlength\tnormalized_length\tunit_offset\tstart_in_read\tend_in_read\tcopy_number\tread_length\talignment_score\tmismatches\tinsertions\tdeletions\tNs\tread_name\tgrouping\timperfections\n")
                         if repeatinfo_gz_file_name != None:
                                 create_dir_if_not_present(repeatinfo_gz_file_name)
                                 repeatinfo_gz_open = exitstack.enter_context(CustomOpen(repeatinfo_gz_file_name, "w+"))
+                                repeatinfo_open.write("unit\tperfection\tlength\tnormalized_length\tunit_offset\tstart_in_read\tend_in_read\tcopy_number\tread_length\talignment_score\tmismatches\tinsertions\tdeletions\tNs\tread_name\tgrouping\timperfections\n")
                         for chunk in pool.imap_unordered(read_phobos_out_string, get_seqfile_chunks()):
                                 chunk_repeat_counts, detected_repeats = chunk
                                 if repeatinfo_file_name != None:
-                                        write_repeatinfo(repeatinfo_open)
+                                        write_repeatinfo(repeatinfo_open, detected_repeats)
                                 if repeatinfo_gz_file_name != None:
-                                        write_repeatinfo(repeatinfo_gz_open)
+                                        write_repeatinfo(repeatinfo_gz_open, detected_repeats)
                                 if countstable_file_name != None:
                                         update_counts(counter, chunk_repeat_counts)
                                 
