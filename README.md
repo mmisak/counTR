@@ -74,8 +74,8 @@ Last, we use our read count matrix for read count normalization and differential
 | mincopynumber      | Minimum number of repeat unit copies in a repeat for a repeat to be considered (default: 0) |
 | maxcopynumber      | Maximum number of repeat unit copies in a repeat for a repeat to be considered (for infinite, set value to: inf) (default: inf) |
 | multirepreads      | Which repeat to consider in case of reads with multiple repeats (after other filters have been applied), either 'all' (consider all repeats for each read), 'none' (ignore multi repeat reads), 'longest' (only consider the longest repeat) or 'unique_longest' (for each unique repeat unit, only consider the longest) (default: all) |
-| readwhitelist      | Path to list of readnames that will not be filtered out, the rest is filtered (default: None)
-| readblacklist      | Path to list of readnames that will be filtered out, the rest is kept (default: None)
+| readwhitelist      | Path to list of read names that will not be filtered out, the rest is filtered (default: None)
+| readblacklist      | Path to list of read names that will be filtered out, the rest is kept (default: None)
 | readchunksize      | Approximate number of lines that are analyzed at once in a (parallel) process (default: 50000)
 | addphobosarguments | Add arguments to the default Phobos call (which is run with: --outputFormat 1 --reportUnit 1 --printRepeatSeqMode 2) <br><br>**Example:**  '--indelScore -4;--mismatchScore -5' (note the single quotation marks) to change the parameters Phobos uses to align detected repeats to ideal repeats <br><br>**Warning:** This command changes the way Phobos generates its output before it is passed to counTR and can result in unexpected behavior, use with caution (default: None)
 
