@@ -42,12 +42,11 @@ class Repeat:
                         else:
                                 reverse_complement_dict = {'A': 'T', 'C': 'G', 'G': 'C', 'T': 'A'}
                                 reverse_complement = "".join(reverse_complement_dict.get(base, base) for base in reversed(self.unit))
+                                min_rc_circ_shift = min([reverse_complement[-i:] + reverse_complement[:-i] for i in range(len(reverse_complement))])
                                 if grouping_motif_setting == "rc":
-                                        return(reverse_complement)
+                                        return(min_rc_circ_shift)
                                 elif grouping_motif_setting == "combine":
-                                        min_fw_circ_shift = min([self.unit[-i:] + self.unit[:-i] for i in range(len(self.unit))])
-                                        min_rc_circ_shift = min([reverse_complement[-i:] + reverse_complement[:-i] for i in range(len(reverse_complement))])
-                                        return(min(min_fw_circ_shift, min_rc_circ_shift))
+                                        return(min(self.unit, min_rc_circ_shift))
                 
                 def create_grouping_string(group):
                         first_attribute = True
