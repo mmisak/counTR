@@ -209,7 +209,7 @@ def determine_grouping_setting(grouping_setting):
 
 def filter_repeats(repeat, min_perfection, max_perfection, min_rep_region_length, max_rep_region_length, min_unit_size, max_unit_size, min_copy_number, max_copy_number, read_whitelist, read_blacklist):
         """Filters repeats according to user supplied settings"""
-        if (repeat.read_name in read_blacklist) or (repeat.read_name in read_whitelist) or not (
+        if (repeat.read_name in read_blacklist) or (len(read_whitelist)!=0 and repeat.read_name not in read_whitelist) or not (
                 (min_perfection <= repeat.perfection <= max_perfection) and (min_rep_region_length <= repeat.length <= max_rep_region_length) and
                 (min_unit_size <= repeat.unit_length <= max_unit_size) and (min_copy_number <= repeat.copy_number <= max_copy_number)):
                 repeat.masked = True
