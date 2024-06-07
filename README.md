@@ -15,7 +15,7 @@ counTR is a read mapping-free method to detect differential tandem repeat conten
 - Python 3.2 or newer - counTR was tested on Python 3.9.7
 
 ## Installation
-As of now, it is sufficient to download the counTR.py and use the program as described below. The file can be obtained from this repository or using this link: https://raw.githubusercontent.com/mmisak/counTR/main/counTR.py
+You can clone this repository via Git (```git clone https://github.com/mmisak/counTR```) or download the counTR.py using this link: https://raw.githubusercontent.com/mmisak/counTR/main/counTR.py
 
 ## Quick start
 ### Running counTR processrepeats
