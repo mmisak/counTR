@@ -235,7 +235,9 @@ class CustomOpen:
                 self.file.close()
         def detect_gzip(self, input_file):
                 file_extension = os.path.splitext(input_file)[1].lower()
-                if file_extension in (".gz", ".gzip"):
+                if not os.path.isfile(input_file): #only do the following check for existing files, not if we want to create one that doesn't exist yet
+                        return(True)
+                elif (file_extension in (".gz", ".gzip")) and (os.path.isfile(input_file)):
                         with open(input_file, 'rb') as in_file_open:
                                 try: #Python >= 3.7 will throw OSError when not gzip, older Python will jump into if/else
                                         if in_file_open.read(3) == b'\x1f\x8b\x08': #check for magic number
@@ -535,7 +537,7 @@ def process_repeats(input_path, countstable_file_name, repeatinfo_file_name, rep
                         if repeatinfo_gz_file_name != None:
                                 create_dir_if_not_present(repeatinfo_gz_file_name)
                                 repeatinfo_gz_open = exitstack.enter_context(CustomOpen(repeatinfo_gz_file_name, "w+"))
-                                repeatinfo_open.write("unit\tperfection\tlength\tnormalized_length\tunit_offset\tstart_in_read\tend_in_read\tcopy_number\tread_length\talignment_score\tmismatches\tinsertions\tdeletions\tNs\tread_name\tgrouping\timperfections\n")
+                                repeatinfo_gz_open.write("unit\tperfection\tlength\tnormalized_length\tunit_offset\tstart_in_read\tend_in_read\tcopy_number\tread_length\talignment_score\tmismatches\tinsertions\tdeletions\tNs\tread_name\tgrouping\timperfections\n")
                         for chunk in pool.imap_unordered(read_phobos_out_string, get_seqfile_chunks()):
                                 chunk_repeat_counts, detected_repeats = chunk
                                 if repeatinfo_file_name != None:
