@@ -106,13 +106,13 @@ Repeat info files are relatively large tab-separated files (size is usually comp
 
 **Example:**
 ```
-unit  perfection  length  normalized_length  unit_offset  start_in_read  end_in_read  copy_number  alignment_score  mismatches  insertions  deletions  Ns  read_name  grouping  imperfections
-ACCG  100.0  10  10  1  20  29  2.5  6  0  0  0  0  SRR3277954.2  ACCG <perfection:[100.0,100.0] length:[0.0,40.0)>  none
-CTT  100.0  9  9  0  41  49  3.0  6  0  0  0  0  SRR3277954.8  CTT <perfection:[100.0,100.0] length:[0.0,40.0)>  none
-AT  98.039  50  51  0  1  50  25.5  43  0  0  1  0  SRX3277954.15  AT <perfection:[0.0,100.0) length:[40.0,80.0)>  [6_1insG,18_19insG,27_27delG]
-AG  100.0  8  8  1  1  8  4.0  6  0  0  0  0  SRR3277954.15	AG <perfection:[100.0,100.0] length:[0.0,40.0)>  none
-AT  100.0  15  15  0  8  22  7.5  13  0  0  0  0  SRR3277954.15  AT <perfection:[100.0,100.0] length:[0.0,40.0)>  none
-AG  100.0  29  29  0  22  50  14.5  27  0  0  0  0  SRR3277954.15  AG <perfection:[100.0,100.0] length:[0.0,40.0)>  none
+unit  perfection  length  normalized_length  unit_offset  start_in_read  end_in_read  copy_number  read_length  alignment_score  mismatches  insertions  deletions  Ns  read_name  grouping  imperfections
+ACCG  100.0  10  10  1  20  29  2.5  79  6  0  0  0  0  read_1  ACCG <perfection:[100.0,100.0] length:[0.0,40.0)>  none
+CTT  100.0  9  9  0  41  49  3.0  79  6  0  0  0  0  read_2  CTT <perfection:[100.0,100.0] length:[0.0,40.0)>  none
+AT  98.039  50  51  0  1  50  25.5  79  43  0  0  1  0  read_3  AT <perfection:[0.0,100.0) length:[40.0,80.0)>  [6_1insG,18_19insG,27_27delG]
+AG  100.0  8  8  1  1  8  4.0  79  6  0  0  0  0  read_4  AG <perfection:[100.0,100.0] length:[0.0,40.0)>  none
+AT  100.0  15  15  0  8  22  7.5  79  13  0  0  0  0  read_5  AT <perfection:[100.0,100.0] length:[0.0,40.0)>  none
+AG  100.0  29  29  0  22  50  14.5  79  27  0  0  0  0  read_5  AG <perfection:[100.0,100.0] length:[0.0,40.0)>  none
 ```
 Most of the values contained are directly taken from the Phobos output and their detailed definition can be looked up in the manual of the Phobos package. The following table briefly describes the meaning of each column:
 
@@ -126,6 +126,7 @@ Most of the values contained are directly taken from the Phobos output and their
 | start_in_read      | Start position of the repeat in the read. |
 | end_in_read        | End position of the repeat in the read. |
 | copy_number        | Number of times a repeat unit is found in a repeat. Calulated by dividing the `normalized_length` by the length of the repeat unit, number can have decimals. <br><br>**Example:** The ATGC copy number in ATGCATGCAT is 2.5. |
+| read_length        | Length of the entire read in which the repeat was detected. |
 | alignment_score    | Alignment score of the repeat when compared to an ideal repeat consisting of the detected repeat unit. |
 | mismatches         | Number of mismatches in the repeat. |
 | insertions         | Number of insertions in the repeat. |
