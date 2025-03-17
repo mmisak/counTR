@@ -55,29 +55,29 @@ Last, we use our read count matrix for read count normalization and differential
 ## Full options
 ### counTR processrepeats parameters
 
-| Parameter          | Description   |
-| ------------------ | ------------- |
-| inputpath          | Path to sequencing data file in fasta(.gz) or fastq(.gz) format. |
-| outputdirectory    | Directory where the output will be written to. |
-| phobospath         | Path to Phobos executable. |
-| outputprefix       | Prefix of output files, prefix will be taken from input file, if not set (default: None) |
-| outputtype         | Output to generate, countstable.txt (`c`), repeatinfo.txt (`i`), repeatinfo.txt.gz (`g`), concatenate the letters for multiple outputs, e.g. `ci` (countstable.txt and repeatinfo.txt) (default: c) |
-| processes          | Number of parallel processes to be used, to automatically set to maximum number of available logical cores, use `auto` (default: auto) |
-| grouping           | Repeat grouping settings, example: `'perfection:[0,100)[100,100] length:[0,30)[30,inf]'` (note the single quotation marks), if `None`, repeats will be only grouped by their motif (default: None) |
-| groupingmotif      | Motif to report for grouping, report the detected motif as is (`detected`), its reverse complement (`rc`), or combine forward and reverse complement (`combine`), all motifs are reported as their lexicographically minimal string rotation (default: detected) |
-| minperfection      | Minimum perfection of a repeat to be considered (default: 0) |
-| maxperfection      | Maximum perfection of a repeat to be considered (default: 100) |
-| minrepeatlength    | Minimum repeat region length for a repeat to be considered (default: 0) |
-| maxrepeatlength    | Maximum repeat region length for a repeat to be considered (for infinite, set value to `inf`) (default: inf) |
-| minunitsize        | Minimum repeat unit size for a repeat to be considered (default: 0) |
-| maxunitsize        | Maximum repeat unit size for a repeat to be considered (for infinite, set value to `inf`) (default: inf) |
-| mincopynumber      | Minimum number of repeat unit copies in a repeat for a repeat to be considered (default: 0) |
-| maxcopynumber      | Maximum number of repeat unit copies in a repeat for a repeat to be considered (for infinite, set value to `inf`) (default: inf) |
-| multirepreads      | Which repeat to consider in case of reads with multiple repeats (after other filters have been applied), either `all` (consider all repeats for each read), `none` (ignore multi repeat reads), `longest` (only consider the longest repeat) or `unique_longest` (for each unique repeat unit, only consider the longest) (default: all) |
-| readwhitelist      | Path to list of read names that will not be filtered out, the rest is filtered (default: None)
-| readblacklist      | Path to list of read names that will be filtered out, the rest is kept (default: None)
-| readchunksize      | Approximate number of lines that are analyzed at once in a (parallel) process (default: 50000)
-| addphobosarguments | Add arguments to the default Phobos call (which is run with: --outputFormat 1 --reportUnit 1 --printRepeatSeqMode 2) <br><br>**Example:**  `'--indelScore -4;--mismatchScore -5'` (note the single quotation marks). This will run Phobos with: --outputFormat 1 --reportUnit 1 --printRepeatSeqMode 2 --indelScore -4 --mismatchScore -5  and thus change the parameters Phobos uses to align detected repeats to ideal repeats <br><br>**Warning:** This command changes the way Phobos generates its output before it is passed to counTR and can result in unexpected behavior, use with caution (default: None)
+| Parameter&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;              | Description   |
+| --------------------- | ------------- |
+| inputpath             | Path to sequencing data file in fasta(.gz) or fastq(.gz) format. |
+| outputdirectory       | Directory where the output will be written to. |
+| phobospath            | Path to Phobos executable. |
+| --outputprefix        | Prefix of output files, prefix will be taken from input file, if not set (default: None) |
+| --outputtype          | Output to generate, countstable.txt (`c`), repeatinfo.txt (`i`), repeatinfo.txt.gz (`g`), concatenate the letters for multiple outputs, e.g. `ci` (countstable.txt and repeatinfo.txt) (default: c) |
+| --processes           | Number of parallel processes to be used, to automatically set to maximum number of available logical cores, use `auto` (default: auto) |
+| --grouping            | Repeat grouping settings, example: `'perfection:[0,100)[100,100] length:[0,30)[30,inf]'` (note the single quotation marks), if `None`, repeats will be only grouped by their motif (default: None) |
+| --groupingmotif       | Motif to report for grouping, report the detected motif as is (`detected`), its reverse complement (`rc`), or combine forward and reverse complement (`combine`), all motifs are reported as their lexicographically minimal string rotation (default: detected) |
+| --minperfection       | Minimum perfection of a repeat to be considered (default: 0) |
+| --maxperfection       | Maximum perfection of a repeat to be considered (default: 100) |
+| --minrepeatlength     | Minimum repeat region length for a repeat to be considered (default: 0) |
+| --maxrepeatlength     | Maximum repeat region length for a repeat to be considered (for infinite, set value to `inf`) (default: inf) |
+| --minunitsize         | Minimum repeat unit size for a repeat to be considered (default: 0) |
+| --maxunitsize         | Maximum repeat unit size for a repeat to be considered (for infinite, set value to `inf`) (default: inf) |
+| --mincopynumber       | Minimum number of repeat unit copies in a repeat for a repeat to be considered (default: 0) |
+| --maxcopynumber       | Maximum number of repeat unit copies in a repeat for a repeat to be considered (for infinite, set value to `inf`) (default: inf) |
+| --multirepreads       | Which repeat to consider in case of reads with multiple repeats (after other filters have been applied), either `all` (consider all repeats for each read), `none` (ignore multi repeat reads), `longest` (only consider the longest repeat) or `unique_longest` (for each unique repeat unit, only consider the longest) (default: all) |
+| --readwhitelist       | Path to list of read names that will not be filtered out, the rest is filtered (default: None)
+| --readblacklist       | Path to list of read names that will be filtered out, the rest is kept (default: None)
+| --readchunksize       | Approximate number of lines that are analyzed at once in a (parallel) process (default: 50000)
+| --addphobosarguments  | Add arguments to the default Phobos call (which is run with: --outputFormat 1 --reportUnit 1 --printRepeatSeqMode 2) <br><br>**Example:**  `'--indelScore -4;--mismatchScore -5'` (note the single quotation marks). This will run Phobos with: --outputFormat 1 --reportUnit 1 --printRepeatSeqMode 2 --indelScore -4 --mismatchScore -5  and thus change the parameters Phobos uses to align detected repeats to ideal repeats <br><br>**Warning:** This command changes the way Phobos generates its output before it is passed to counTR and can result in unexpected behavior, use with caution (default: None)
 
 ### counTR summarizecounts parameters
 
