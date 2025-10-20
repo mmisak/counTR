@@ -12,7 +12,7 @@ counTR is a read mapping-free method to detect differential tandem repeat conten
 ## Requirements
 - Linux - counTR was tested on Ubuntu 18.04, macOS systems might work but were not tested thus far
 - Python 3.2 or newer - counTR was tested on Python 3.9.7
-- One of the following two repeat callers of your choice (or both):
+- One of the following two repeat callers of your choice:
   - Phobos - counTR was tested with the binary `phobos_64_libstdc++6` of the package `phobos-v3.3.12-linux`. Phobos is freely available for academic research and can be downloaded here: https://www.ruhr-uni-bochum.de/spezzoo/cm/cm_phobos_download.htm
   - TRF - counTR was tested with the binary `trf409.linux64`. TRF is free and open source software and available on GitHub: https://github.com/Benson-Genomics-Lab/TRF/releases/
 
@@ -62,24 +62,24 @@ Last, we use our read count matrix for read count normalization and differential
 | inputPath             | Path to sequencing data file in fasta(.gz) or fastq(.gz) format. |
 | outputDirectory       | Directory where the output will be written to. |
 | repeatCallerPath      | Path to Phobos or TRF executable. |
-| --outputPrefix        | Prefix of output files, prefix will be taken from input file, if not set (default: None) |
-| --outputType          | Output to generate, countstable.txt (`c`), repeatinfo.txt (`i`), repeatinfo.txt.gz (`g`), concatenate the letters for multiple outputs, e.g. `ci` (countstable.txt and repeatinfo.txt) (default: c) |
-| --processes           | Number of parallel processes to be used, to automatically set to maximum number of available logical cores, use `auto` (default: auto) |
-| --grouping            | Repeat grouping settings, example: `'perfection:[0,100)[100,100] length:[0,30)[30,inf]'` (note the single quotation marks), if `None`, repeats will be only grouped by their motif (default: None) |
-| --groupingMotif       | Motif to report for grouping, report the detected motif as is (`detected`), its reverse complement (`rc`), or combine forward and reverse complement (`combine`), all motifs are reported as their lexicographically minimal string rotation (default: detected) |
-| --minPerfection       | Minimum perfection of a repeat to be considered (default: 0) |
-| --maxPerfection       | Maximum perfection of a repeat to be considered (default: 100) |
-| --minRepeatLength     | Minimum repeat region length for a repeat to be considered (default: 0) |
-| --maxRepeatLength     | Maximum repeat region length for a repeat to be considered (for infinite, set value to `inf`) (default: inf) |
-| --minUnitSize         | Minimum repeat unit size for a repeat to be considered (default: 0) |
-| --maxUnitSize         | Maximum repeat unit size for a repeat to be considered (default: 6) |
-| --minCopyNumber       | Minimum number of repeat unit copies in a repeat for a repeat to be considered (default: 0) |
-| --maxCopyNumber       | Maximum number of repeat unit copies in a repeat for a repeat to be considered (for infinite, set value to `inf`) (default: inf) |
-| --multiRepeatReads       | Which repeat to consider in case of reads with multiple repeats (after other filters have been applied), either `all` (consider all repeats for each read), `none` (ignore multi repeat reads), `longest` (only consider the longest repeat) or `unique_longest` (for each unique repeat unit, only consider the longest) (default: all) |
-| --readWhiteList       | Path to list of read names that will not be filtered out, the rest is filtered (default: None)
-| --readBlackList       | Path to list of read names that will be filtered out, the rest is kept (default: None)
-| --readChunkSize       | Approximate number of lines that are analyzed at once in a (parallel) process (default: 50000)
-| --repeatCallerArguments  | Add arguments to the default Phobos call (which is run with: --outputFormat 1 --reportUnit 1 --printRepeatSeqMode 2) <br><br>**Example:**  `'--indelScore -4;--mismatchScore -5'` (note the single quotation marks). This will run Phobos with: --outputFormat 1 --reportUnit 1 --printRepeatSeqMode 2 --indelScore -4 --mismatchScore -5  and thus change the parameters Phobos uses to align detected repeats to ideal repeats <br><br>**Warning:** This command changes the way Phobos generates its output before it is passed to counTR and can result in unexpected behavior, use with caution (default: None)
+| --outputPrefix        | Prefix of output files, prefix will be taken from input file, if not set (default: None). |
+| --outputType          | Output to generate, countstable.txt (`c`), repeatinfo.txt (`i`), repeatinfo.txt.gz (`g`), concatenate the letters for multiple outputs, e.g. `ci` (countstable.txt and repeatinfo.txt) (default: c). |
+| --processes           | Number of parallel processes to be used, to automatically set to maximum number of available logical cores, use `auto` (default: auto). |
+| --grouping            | Repeat grouping settings, example: `'perfection:[0,100)[100,100] length:[0,30)[30,inf]'` (note the single quotation marks), if `None`, repeats will be only grouped by their motif (default: None). |
+| --groupingMotif       | Motif to report for grouping, report the detected motif as is (`detected`), its reverse complement (`rc`), or combine forward and reverse complement (`combine`), all motifs are reported as their lexicographically minimal string rotation (default: detected). |
+| --minPerfection       | Minimum perfection of a repeat to be considered (default: 0). |
+| --maxPerfection       | Maximum perfection of a repeat to be considered (default: 100). |
+| --minRepeatLength     | Minimum repeat region length for a repeat to be considered (default: 0). |
+| --maxRepeatLength     | Maximum repeat region length for a repeat to be considered (for infinite, set value to `inf`) (default: inf). |
+| --minUnitSize         | Minimum repeat unit size for a repeat to be considered (default: 0). |
+| --maxUnitSize         | Maximum repeat unit size for a repeat to be considered (default: 6). |
+| --minCopyNumber       | Minimum number of repeat unit copies in a repeat for a repeat to be considered (default: 0). |
+| --maxCopyNumber       | Maximum number of repeat unit copies in a repeat for a repeat to be considered (for infinite, set value to `inf`) (default: inf). |
+| --multiRepeatReads       | Which repeat to consider in case of reads with multiple repeats (after other filters have been applied), either `all` (consider all repeats for each read), `none` (ignore multi repeat reads), `longest` (only consider the longest repeat) or `unique_longest` (for each unique repeat unit, only consider the longest) (default: all). |
+| --readWhiteList       | Path to list of read names that will not be filtered out, the rest is filtered (default: None).
+| --readBlackList       | Path to list of read names that will be filtered out, the rest is kept (default: None).
+| --readChunkSize       | Approximate number of lines that are analyzed at once in a (parallel) process (default: 50000).
+| --repeatCallerArguments  | Add arguments to the default Phobos call (which by default is run with: --outputFormat 1 --reportUnit 1 --printRepeatSeqMode 2), or TRF call (which by default is run with: 2 5 7 80 10 16 maxUnitSize, maxUnitSize is 6 by default in counTR). Phobos example: '--indelScore -4;--mismatchScore -5'. TRF example: '2;5;7;80;10;40;maxUnitSize' (include the single quotation marks). Warning: This command can lead to unexpected behavior and crashes, if used incorrectly (default: None).
 
 ### counTR summarizeCounts parameters
 
