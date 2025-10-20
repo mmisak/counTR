@@ -342,7 +342,7 @@ def smith_waterman(read_seq, ref_seq, match_weight, mismatch_penalty, gap_penalt
 
     # Flattened matrices: index = i*(n_cols+1) + j
     width = n_cols + 1
-    scores = array('I', [0]) * ((n_rows + 1) * (n_cols + 1))   # 32-bit unsigned ints
+    scores = array.array('I', [0]) * ((n_rows + 1) * (n_cols + 1))   # 32-bit unsigned ints
     trace  = bytearray((n_rows + 1) * (n_cols + 1))            # directions
 
     best_score = 0
@@ -447,11 +447,13 @@ def process_TRF(arguments):
                 fasta = "".join(fasta_line_list)
 
         if add_TRF_arguments == None:
-                TRF_arguments = [TRF_path, "-", "2", "5", "7", "80", "10", "16", max_unit_size, "-ngs"]
+                TRF_arguments = [TRF_path, "-", "2", "5", "7", "80", "10", "16", str(max_unit_size), "-ngs"]
                 match_weight = 2
                 mismatch_penalty = 5
                 indel_penalty = 7
         else:
+                if 'maxUnitSize' in add_TRF_arguments:
+                        add_TRF_arguments = add_TRF_arguments.replace('maxUnitSize', str(max_unit_size))
                 TRF_args_to_add = add_TRF_arguments.split(";")
                 TRF_arguments = [TRF_path, "-"] + TRF_args_to_add + ["-ngs"]
                 match_weight = int(TRF_args_to_add[0])
@@ -857,11 +859,11 @@ def parse_parameters():
                         subparser.add_argument("--readWhiteList", type=str, default=None, dest="read_whitelist_file", help="Path to list of readnames that will not be filtered out, the rest is filtered (default: %(default)s).")
                         subparser.add_argument("--readBlackList", type=str, default=None, dest="read_blacklist_file", help="Path to list of readnames that will be filtered out, the rest is kept (default: %(default)s).")
                         subparser.add_argument("--readChunkSize", type=int, default=50000, dest="read_chunk_size", help="Approximate number of lines that are analyzed at once in a (parallel) process (default: %(default)s).")
-                        subparser.add_argument("--repeatCallerArguments", type=str, default=None, dest="repeat_caller_arguments", help="Add arguments to the default Phobos call (which by default is run with: --outputFormat 1 --reportUnit 1 --printRepeatSeqMode 2), or TRF call (which by default is run with: 2 5 7 80 10 16 maxUnitSize; maxUnitSize is 6 by default). Phobos example: '--indelScore -4;--mismatchScore -5' (note the single quotation marks). TRF example: '2,5,7,80,10,40,maxUnitSize'. 'Warning: This command can lead to unexpected behavior and crashes, if used incorrectly (default: %(default)s).")
+                        subparser.add_argument("--repeatCallerArguments", type=str, default=None, dest="repeat_caller_arguments", help="Add arguments to the default Phobos call (which by default is run with: --outputFormat 1 --reportUnit 1 --printRepeatSeqMode 2), or TRF call (which by default is run with: 2 5 7 80 10 16 maxUnitSize; maxUnitSize is 6 by default). Phobos example: '--indelScore -4;--mismatchScore -5'. TRF example: '2;5;7;80;10;40;maxUnitSize' (include the single quotation marks). 'Warning: This command can lead to unexpected behavior and crashes, if used incorrectly (default: %(default)s).")
                 elif subparser == parser_summarizecounts:
                         subparser.add_argument("outputFile", type=str, help="Path to output countmatrix.txt file.")
-                        subparser.add_argument("inputPaths", type=str, nargs="+", help="All countstable.txt files to be summarized into a count matrix")
-                        subparser.add_argument("--sampleNames", type=str, default=None, nargs="+", dest="sample_names", help="List of sample names to be used in the resulting header in the same order as input files. If not set, input file names will be used (default: %(default)s)")
+                        subparser.add_argument("inputPaths", type=str, nargs="+", help="All countstable.txt files to be summarized into a count matrix.")
+                        subparser.add_argument("--sampleNames", type=str, default=None, nargs="+", dest="sample_names", help="List of sample names to be used in the resulting header in the same order as input files. If not set, input file names will be used (default: %(default)s).")
 
         if len(sys.argv) < 2:
                 parser.print_help()
