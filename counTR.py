@@ -860,8 +860,8 @@ def parse_parameters():
                         subparser.add_argument("--repeatCallerArguments", type=str, default=None, dest="repeat_caller_arguments", help="add arguments to the default Phobos call (which is run with: --outputFormat 1 --reportUnit 1 --printRepeatSeqMode 2), example: '--indelScore -4;--mismatchScore -5' (note the single quotation marks). Warning: This command can lead to unexpected behavior and crashes, if used incorrectly (default: %(default)s)")
                 elif subparser == parser_summarizecounts:
                         subparser.add_argument("outputFile", type=str, help="path to output count matrix.")
-                        subparser.add_argument("inputPaths", type=str, nargs="+", help="countstable.txt files to be summarized into a count matrix")
-                        subparser.add_argument("--samplenames", type=str, default=None, nargs="+", dest="sample_names", help="list of sample names to be used in the resulting header in the same order as input files. If not set, input file names will be used (default: %(default)s)")
+                        subparser.add_argument("inputPaths", type=str, nargs="+", help="All countstable.txt files to be summarized into a count matrix")
+                        subparser.add_argument("--sampleNames", type=str, default=None, nargs="+", dest="sample_names", help="List of sample names to be used in the resulting header in the same order as input files. If not set, input file names will be used (default: %(default)s)")
 
         if len(sys.argv) < 2:
                 parser.print_help()
