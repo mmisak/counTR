@@ -72,7 +72,7 @@ Last, we use our read count matrix for read count normalization and differential
 | --minRepeatLength     | Minimum repeat region length for a repeat to be considered (default: 0) |
 | --maxRepeatLength     | Maximum repeat region length for a repeat to be considered (for infinite, set value to `inf`) (default: inf) |
 | --minUnitSize         | Minimum repeat unit size for a repeat to be considered (default: 0) |
-| --maxUnitSize         | Maximum repeat unit size for a repeat to be considered (for infinite, set value to `inf`) (default: 6) |
+| --maxUnitSize         | Maximum repeat unit size for a repeat to be considered (default: 6) |
 | --minCopyNumber       | Minimum number of repeat unit copies in a repeat for a repeat to be considered (default: 0) |
 | --maxCopyNumber       | Maximum number of repeat unit copies in a repeat for a repeat to be considered (for infinite, set value to `inf`) (default: inf) |
 | --multiRepeatReads       | Which repeat to consider in case of reads with multiple repeats (after other filters have been applied), either `all` (consider all repeats for each read), `none` (ignore multi repeat reads), `longest` (only consider the longest repeat) or `unique_longest` (for each unique repeat unit, only consider the longest) (default: all) |
