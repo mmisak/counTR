@@ -8,6 +8,8 @@ import itertools
 import re
 import threading
 import contextlib
+import math
+import array
 
 class Repeat:
         """Class storing repeats including their attributes"""
@@ -96,9 +98,9 @@ def remove_suffix(text, suffix):
                 return text[:0-len(suffix)]
         return text
 
-def compute_repeat_unit_offset(repeat_unit, alignment_optimal_repeat):
+def compute_repeat_unit_offset(repeat_unit, optimal_repeat):
         """Finds repeat unit offset in repsect to repeat unit in the provided format"""
-        optimal_repeat_no_gaps = alignment_optimal_repeat.replace("-","")
+        optimal_repeat_no_gaps = optimal_repeat.replace("-","")
         repeat_unit_offset = 0
         offset_shifted_repeat_unit = repeat_unit
         for i in range(len(repeat_unit)):
@@ -155,12 +157,6 @@ def interpret_alignment(alignment_repeat_in_read, alignment_optimal_repeat, repe
                                                                 str(mismatch_pos_repeat) + alignment_optimal_repeat[i] + ">" + alignment_repeat_in_read[i] +"," +
                                                                 str(mismatch_pos_read_repeat) + alignment_repeat_in_read[i] + ">" + alignment_optimal_repeat[i] + "]")
         return(repeat_imperfections)
-
-
-
-
-
-
 
 def create_dir_if_not_present(path):
         """Creates the directory at the given path if not already present"""
@@ -235,19 +231,21 @@ class CustomOpen:
                 self.file.close()
         def detect_gzip(self, input_file):
                 file_extension = os.path.splitext(input_file)[1].lower()
-                if not os.path.isfile(input_file): #only do the following check for existing files, not if we want to create one that doesn't exist yet
-                        return(True)
-                elif (file_extension in (".gz", ".gzip")) and (os.path.isfile(input_file)):
-                        with open(input_file, 'rb') as in_file_open:
-                                try: #Python >= 3.7 will throw OSError when not gzip, older Python will jump into if/else
-                                        if in_file_open.read(3) == b'\x1f\x8b\x08': #check for magic number
-                                                return(True)
-                                        else:
-                                                return(False)
-                                except OSError:
-                                        return(False)
-                else:
+                if not file_extension in (".gz", ".gzip"):
                         return(False)
+                else:
+                        if not os.path.isfile(input_file): #only do the following check for existing files, not if we want to create one that doesn't exist yet
+                                return(True)
+                        elif os.path.isfile(input_file):
+                                with open(input_file, 'rb') as in_file_open:
+                                        try: #Python >= 3.7 will throw OSError when not gzip, older Python will jump into if/else
+                                                if in_file_open.read(3) == b'\x1f\x8b\x08': #check for magic number
+                                                        return(True)
+                                                else:
+                                                        return(False)
+                                        except OSError:
+                                                return(False)
+
         def detect_file_format(self, input_file):
                 if self.gzipped:
                         file_gzip_extension = os.path.splitext(input_file)[1]
@@ -326,9 +324,237 @@ def filter_to_longest_repeats(current_read_repeats, multi_rep_reads_setting):
                                 if repeat.length > longest_repeats[repeat.unit].length or (repeat.length == longest_repeat.length and repeat.perfection > longest_repeat.perfection):
                                         longest_repeats[repeat.unit].masked = True
                                         longest_repeats[repeat.unit] = repeat
-                
-def read_phobos_out_string(arguments):
-        """Reads and interprets Phobos output in string format, constantly updates watcher processes with data"""
+
+def smith_waterman(read_seq, ref_seq, match_weight, mismatch_penalty, gap_penalty, band_width=None):
+    """Smith–Waterman local alignment (linear gap penalty).
+    Returns (aligned_read, aligned_ref, best_score).
+
+    band_width: if set to an int, compute only cells where |i-j| <= band_width.
+                For similar sequences, a small band hugely speeds things up.
+    """
+    if not read_seq or not ref_seq:
+        return "", "", 0
+
+    n_rows, n_cols = len(read_seq), len(ref_seq)
+
+    # Direction codes (1 byte each): 0=STOP, 1=DIAG, 2=UP, 3=LEFT
+    STOP, DIAG, UP, LEFT = 0, 1, 2, 3
+
+    # Flattened matrices: index = i*(n_cols+1) + j
+    width = n_cols + 1
+    scores = array('I', [0]) * ((n_rows + 1) * (n_cols + 1))   # 32-bit unsigned ints
+    trace  = bytearray((n_rows + 1) * (n_cols + 1))            # directions
+
+    best_score = 0
+    best_i = 0
+    best_j = 0
+
+    # Local references (avoid global lookups inside loops)
+    s_arr = scores
+    t_arr = trace
+    mw = match_weight
+    mm = mismatch_penalty
+    gp = gap_penalty
+    w  = width
+    STOP_c, DIAG_c, UP_c, LEFT_c = STOP, DIAG, UP, LEFT
+
+    # Optionally use a band: for row i, only columns j in [max(1,i-b), min(n_cols,i+b)]
+    b = band_width
+
+    for i in range(1, n_rows + 1):
+        a = read_seq[i - 1]
+
+        j_start = 1
+        j_end = n_cols
+        if b is not None:
+            j_start = max(1, i - b)
+            j_end   = min(n_cols, i + b)
+
+        base_row = i * w
+
+        # Fill row
+        for j in range(j_start, j_end + 1):
+            b_char = ref_seq[j - 1]
+
+            diag = s_arr[base_row - w + j - 1] + (mw if a == b_char else -mm)
+            up   = s_arr[base_row - w + j]     - gp   # gap in ref
+            left = s_arr[base_row + j - 1]     - gp   # gap in read
+
+            # Tie-break: diag > up > left > 0
+            if diag > 0 and diag >= up and diag >= left:
+                val = diag
+                dirc = DIAG_c
+            elif up > 0 and up >= left:
+                val = up
+                dirc = UP_c
+            elif left > 0:
+                val = left
+                dirc = LEFT_c
+            else:
+                val = 0
+                dirc = STOP_c
+
+            idx = base_row + j
+            s_arr[idx] = val
+            t_arr[idx] = dirc
+
+            if val > best_score:
+                best_score = val
+                best_i = i
+                best_j = j
+
+    # Traceback from best cell
+    i = best_i
+    j = best_j
+    aligned_read = []
+    aligned_ref  = []
+
+    while i > 0 and j > 0:
+        idx = i * w + j
+        move = t_arr[idx]
+        if move == STOP_c:
+            break
+        if move == DIAG_c:
+            aligned_read.append(read_seq[i - 1])
+            aligned_ref.append(ref_seq[j - 1])
+            i -= 1
+            j -= 1
+        elif move == UP_c:    # gap in ref
+            aligned_read.append(read_seq[i - 1])
+            aligned_ref.append('-')
+            i -= 1
+        else:                 # LEFT_c -> gap in read
+            aligned_read.append('-')
+            aligned_ref.append(ref_seq[j - 1])
+            j -= 1
+
+    aligned_read.reverse()
+    aligned_ref.reverse()
+
+    return ''.join(aligned_read), ''.join(aligned_ref), int(best_score)
+
+
+def process_TRF(arguments):
+        """Runs TRF, reads and interprets TRF output in string format, constantly updates watcher processes with data"""
+
+        reads, reads_file_type, TRF_path, grouping, grouping_motif_setting, min_perfection, max_perfection, min_rep_region_length, max_rep_region_length, min_unit_size, max_unit_size, min_copy_number, max_copy_number, multi_rep_reads_setting, whitelisted_reads, blacklisted_reads, countstable_file_name, repeatinfo_file_name, repeatinfo_gz_file_name, add_TRF_arguments = arguments
+        
+        if reads_file_type == "FASTA":
+                fasta_with_read_identifiers, read_lengths = add_fasta_read_identifiers(reads)
+                fasta = "".join(fasta_with_read_identifiers)
+        else:
+                fasta_line_list, read_lengths = convert_fq_line_list_to_fa(reads)
+                fasta = "".join(fasta_line_list)
+
+        if add_TRF_arguments == None:
+                TRF_arguments = [TRF_path, "-", "2", "5", "7", "80", "10", "16", max_unit_size, "-ngs"]
+                match_weight = 2
+                mismatch_penalty = 5
+                indel_penalty = 7
+        else:
+                TRF_args_to_add = add_TRF_arguments.split(";")
+                TRF_arguments = [TRF_path, "-"] + TRF_args_to_add + ["-ngs"]
+                match_weight = int(TRF_args_to_add[0])
+                mismatch_penalty = int(TRF_args_to_add[1])
+                indel_penalty = int(TRF_args_to_add[2])
+
+        TRF_process = subprocess.Popen(TRF_arguments, stdin=subprocess.PIPE, stdout=subprocess.PIPE, stderr=subprocess.PIPE, text=True)
+
+        TRF_out, TRF_err = TRF_process.communicate(input=fasta)
+        TRF_output_string = TRF_out
+
+        detected_repeats = []
+        repeat_counts = {}
+        TRF_output_string = TRF_output_string.splitlines()
+        current_read = ""
+        current_read_repeats = []
+        for line in TRF_output_string:
+                if line.startswith("@"):
+                        repeat_properties = {}
+                        read_name = remove_suffix(remove_prefix(line, "@"), "\n")
+                        repeat_properties["read_length"] = read_lengths[read_name]
+                        repeat_properties["read_name"] = read_name[:read_name.rindex("[")] #remove (internal) index from read name
+                        if current_read != read_name and current_read != "":
+                                filter_to_longest_repeats(current_read_repeats, multi_rep_reads_setting)
+                                for repeat in current_read_repeats:
+                                        if not (repeatinfo_file_name == None and repeatinfo_gz_file_name == None):
+                                                detected_repeats.append(repeat)
+                                        if not (countstable_file_name == None or repeat.masked):
+                                                if grouping != None and repeat.groups != None:
+                                                        for group_index, group in enumerate(repeat.groups):
+                                                                if repeat.grouping_strings[group_index] in repeat_counts:
+                                                                        repeat_counts[repeat.grouping_strings[group_index]] += 1
+                                                                else:
+                                                                        repeat_counts[repeat.grouping_strings[group_index]] = 1
+                                                elif grouping == None:
+                                                        if repeat.grouping_strings[0] in repeat_counts:
+                                                                repeat_counts[repeat.grouping_strings[0]] += 1
+                                                        else:
+                                                                repeat_counts[repeat.grouping_strings[0]] = 1
+                        current_read_repeats = []
+                        current_read = read_name                                
+                else:
+                        split_attributes = remove_suffix(line, "\n").split()
+                        if len(split_attributes) == 17:
+                                repeat_in_read = split_attributes[14]
+                                repeat_properties["start_in_read"] = int(split_attributes[0])
+                                repeat_properties["end_in_read"] = int(split_attributes[1])
+                                detected_unit = split_attributes[13]
+                                repeat_unit_circ_shift = min([detected_unit[-i:] + detected_unit[:-i] for i in range(len(detected_unit))])
+                                repeat_properties["unit"] = repeat_unit_circ_shift
+                                repeat_properties["unit_size"] = len(detected_unit)
+                                repeat_properties["length"] = len(split_attributes[14])
+                                repeat_properties["copy_number"] = float(split_attributes[3])
+                                repeat_properties["Ns"] = repeat_in_read.count("N")
+                                percent_matches = float(split_attributes[5])
+                                if percent_matches < 100.0: #only run alignment if repeat is not perfect
+                                        perfect_repeat = (detected_unit * ((len(split_attributes[14]) // len(detected_unit)) + 1))[:len(split_attributes[14])]
+                                        alignment_repeat_in_read, alignment_optimal_repeat, alignment_score = smith_waterman(repeat_in_read.replace("-",""), perfect_repeat, match_weight, mismatch_penalty, indel_penalty)
+                                else:
+                                        alignment_repeat_in_read = repeat_in_read
+                                        alignment_optimal_repeat = repeat_in_read
+                                        alignment_score = match_weight * len(repeat_in_read)
+
+                                repeatunit_offset = compute_repeat_unit_offset(repeat_properties["unit"], alignment_optimal_repeat)
+                                repeat_properties["alignment_score"] = int(alignment_score)
+                                repeat_properties["unit_offset"] = repeatunit_offset
+                                repeat_properties["insertions"] =  alignment_optimal_repeat.count("-")
+                                repeat_properties["deletions"] =  alignment_repeat_in_read.count("-")
+                                repeat_properties["N"] =  alignment_repeat_in_read.count("N")
+                                alignment_optimal_repeat_no_indels,  alignment_repeat_in_read_no_indels = map(''.join, zip(*[(a, b) for a, b in zip(alignment_optimal_repeat, alignment_repeat_in_read) if '-' not in (a, b)]))
+                                repeat_properties["mismatches"] = sum(a != b for a, b in zip(alignment_optimal_repeat_no_indels, alignment_repeat_in_read_no_indels))
+                                repeat_properties["normalized_repeat_length"] = repeat_properties["end_in_read"] - repeat_properties["start_in_read"] + 1 - repeat_properties["insertions"] + repeat_properties["deletions"]
+                                repeat_properties["perfection"] = 100*((repeat_properties["normalized_repeat_length"] - repeat_properties["mismatches"] - repeat_properties["deletions"] - repeat_properties["insertions"] - repeat_properties["Ns"])/repeat_properties["normalized_repeat_length"])
+                                imperfections = interpret_alignment(alignment_repeat_in_read, alignment_optimal_repeat, repeatunit_offset, repeat_properties["unit"], repeat_properties["start_in_read"], repeat_properties["end_in_read"])
+                                repeat_properties["imperfections"] = imperfections
+                                current_repeat = Repeat(repeat_properties)
+                                current_repeat.group_repeat(grouping, grouping_motif_setting)
+                                filter_repeats(current_repeat, min_perfection, max_perfection, min_rep_region_length, max_rep_region_length, min_unit_size, max_unit_size, min_copy_number, max_copy_number, whitelisted_reads, blacklisted_reads) #function directly filters repeats by setting their 'masked' attribute to True, function does not return anything
+                                current_read_repeats.append(current_repeat)
+
+        #add last repeat
+        filter_to_longest_repeats(current_read_repeats, multi_rep_reads_setting)
+        for repeat in current_read_repeats:
+                if not (repeatinfo_file_name == None and repeatinfo_gz_file_name == None):
+                        detected_repeats.append(repeat)
+                if not (countstable_file_name == None or repeat.masked):
+                        if grouping!=None and repeat.groups!=None:
+                                for group_index, group in enumerate(repeat.groups):
+                                        if repeat.grouping_strings[group_index] in repeat_counts:
+                                                repeat_counts[repeat.grouping_strings[group_index]] += 1
+                                        else:
+                                                repeat_counts[repeat.grouping_strings[group_index]] = 1
+                        elif grouping == None:
+                                if repeat.grouping_strings[0] in repeat_counts:
+                                        repeat_counts[repeat.grouping_strings[0]] += 1
+                                else:
+                                        repeat_counts[repeat.grouping_strings[0]] = 1
+        return(repeat_counts, detected_repeats)
+
+
+            
+def process_phobos(arguments):
+        """Runs Phobos, reads and interprets Phobos output in string format, constantly updates watcher processes with data"""
         def assign_attribute_datatypes(attribute, value):
                 if attribute == "length":
                         value = int(value)
@@ -366,7 +592,7 @@ def read_phobos_out_string(arguments):
                 fasta_line_list, read_lengths = convert_fq_line_list_to_fa(reads)
                 fasta = "".join(fasta_line_list)
 
-        phobos_arguments = [phobos_path, "/dev/stdin", "/dev/stdout", "--outputFormat 1", "--reportUnit 1", "--printRepeatSeqMode 2"]
+        phobos_arguments = [phobos_path, "/dev/stdin", "/dev/stdout", "--outputFormat 1", "--reportUnit 1", "--printRepeatSeqMode 2", "--minUnitLen " + min_unit_size, "--maxUnitLen " + min_unit_size]
 
         if add_phobos_arguments != None:
                 phobos_arguments.extend(add_phobos_arguments.split(";"))
@@ -400,7 +626,7 @@ def read_phobos_out_string(arguments):
                                                                 else:
                                                                         repeat_counts[repeat.grouping_strings[group_index]] = 1
                                                 elif grouping == None:
-                                                        if repeat.unit in repeat_counts:
+                                                        if repeat.grouping_strings[0] in repeat_counts:
                                                                 repeat_counts[repeat.grouping_strings[0]] += 1
                                                         else:
                                                                 repeat_counts[repeat.grouping_strings[0]] = 1
@@ -450,15 +676,15 @@ def read_phobos_out_string(arguments):
                                         else:
                                                 repeat_counts[repeat.grouping_strings[group_index]] = 1
                         elif grouping == None:
-                                if repeat.unit in repeat_counts:
+                                if repeat.grouping_strings[0] in repeat_counts:
                                         repeat_counts[repeat.grouping_strings[0]] += 1
                                 else:
                                         repeat_counts[repeat.grouping_strings[0]] = 1
                                         
         return(repeat_counts, detected_repeats)
 
-def process_repeats(input_path, countstable_file_name, repeatinfo_file_name, repeatinfo_gz_file_name, phobos_path, processes_number, grouping, grouping_motif_setting, min_perfection, max_perfection, min_rep_region_length, max_rep_region_length, min_unit_size, max_unit_size, min_copy_number, max_copy_number, multi_rep_reads_setting, read_whitelist_file, read_blacklist_file, read_chunk_size, add_phobos_arguments):
-        """Starts and kills listener processes, iterates through reads file and sends chunks of reads to read_phobos_out_string function that processes them"""
+def process_repeats(input_path, countstable_file_name, repeatinfo_file_name, repeatinfo_gz_file_name, repeatcaller, repeatcaller_path, processes_number, grouping, grouping_motif_setting, min_perfection, max_perfection, min_rep_region_length, max_rep_region_length, min_unit_size, max_unit_size, min_copy_number, max_copy_number, multi_rep_reads_setting, read_whitelist_file, read_blacklist_file, read_chunk_size, add_phobos_arguments):
+        """Starts and kills listener processes, iterates through reads file and sends chunks of reads to process_phobos function that processes them"""
 
         class ThreadsafeIterator:
                 """Takes an iterator/generator and makes it thread-safe by serializing call to the `next` method of given iterator/generator"""
@@ -484,15 +710,15 @@ def process_repeats(input_path, countstable_file_name, repeatinfo_file_name, rep
                         while True:
                                 next_line = list(itertools.islice(seqfile_open, 1))
                                 if not next_n_lines or not next_line:
-                                        yield(next_n_lines, seqfile_open.file_format, phobos_path, grouping, grouping_motif_setting, min_perfection, max_perfection, min_rep_region_length, max_rep_region_length, min_unit_size, max_unit_size, min_copy_number, max_copy_number, multi_rep_reads_setting, whitelisted_reads, blacklisted_reads, countstable_file_name, repeatinfo_file_name, repeatinfo_gz_file_name, add_phobos_arguments)
+                                        yield(next_n_lines, seqfile_open.file_format, repeatcaller_path, grouping, grouping_motif_setting, min_perfection, max_perfection, min_rep_region_length, max_rep_region_length, min_unit_size, max_unit_size, min_copy_number, max_copy_number, multi_rep_reads_setting, whitelisted_reads, blacklisted_reads, countstable_file_name, repeatinfo_file_name, repeatinfo_gz_file_name, add_phobos_arguments)
                                         break
                                 elif seqfile_open.file_format == "FASTQ" and next_line == ["+\n"]:
                                         next_n_lines.append(next_line[0])
                                         next_n_lines.append(list(itertools.islice(seqfile_open, 1))[0])
-                                        yield(next_n_lines, "FASTQ", phobos_path, grouping, grouping_motif_setting, min_perfection, max_perfection, min_rep_region_length, max_rep_region_length, min_unit_size, max_unit_size, min_copy_number, max_copy_number, multi_rep_reads_setting, whitelisted_reads, blacklisted_reads, countstable_file_name, repeatinfo_file_name, repeatinfo_gz_file_name, add_phobos_arguments)
+                                        yield(next_n_lines, "FASTQ", repeatcaller_path, grouping, grouping_motif_setting, min_perfection, max_perfection, min_rep_region_length, max_rep_region_length, min_unit_size, max_unit_size, min_copy_number, max_copy_number, multi_rep_reads_setting, whitelisted_reads, blacklisted_reads, countstable_file_name, repeatinfo_file_name, repeatinfo_gz_file_name, add_phobos_arguments)
                                         next_n_lines = list(itertools.islice(seqfile_open, read_chunk_size))
                                 elif seqfile_open.file_format == "FASTA" and next_line[0].startswith(">"):
-                                        yield(next_n_lines, "FASTA", phobos_path, grouping, grouping_motif_setting, min_perfection, max_perfection, min_rep_region_length, max_rep_region_length, min_unit_size, max_unit_size, min_copy_number, max_copy_number, multi_rep_reads_setting, whitelisted_reads, blacklisted_reads, countstable_file_name, repeatinfo_file_name, repeatinfo_gz_file_name, add_phobos_arguments)
+                                        yield(next_n_lines, "FASTA", repeatcaller_path, grouping, grouping_motif_setting, min_perfection, max_perfection, min_rep_region_length, max_rep_region_length, min_unit_size, max_unit_size, min_copy_number, max_copy_number, multi_rep_reads_setting, whitelisted_reads, blacklisted_reads, countstable_file_name, repeatinfo_file_name, repeatinfo_gz_file_name, add_phobos_arguments)
                                         next_n_lines = next_line + list(itertools.islice(seqfile_open, read_chunk_size))
                                 elif next_line != []:
                                         next_n_lines.append(next_line[0])
@@ -538,14 +764,24 @@ def process_repeats(input_path, countstable_file_name, repeatinfo_file_name, rep
                                 create_dir_if_not_present(repeatinfo_gz_file_name)
                                 repeatinfo_gz_open = exitstack.enter_context(CustomOpen(repeatinfo_gz_file_name, "w+"))
                                 repeatinfo_gz_open.write("unit\tperfection\tlength\tnormalized_length\tunit_offset\tstart_in_read\tend_in_read\tcopy_number\tread_length\talignment_score\tmismatches\tinsertions\tdeletions\tNs\tread_name\tgrouping\timperfections\n")
-                        for chunk in pool.imap_unordered(read_phobos_out_string, get_seqfile_chunks()):
-                                chunk_repeat_counts, detected_repeats = chunk
-                                if repeatinfo_file_name != None:
-                                        write_repeatinfo(repeatinfo_open, detected_repeats)
-                                if repeatinfo_gz_file_name != None:
-                                        write_repeatinfo(repeatinfo_gz_open, detected_repeats)
-                                if countstable_file_name != None:
-                                        update_counts(counter, chunk_repeat_counts)
+                        if repeatcaller == "Phobos":
+                                for chunk in pool.imap_unordered(process_phobos, get_seqfile_chunks()):
+                                        chunk_repeat_counts, detected_repeats = chunk
+                                        if repeatinfo_file_name != None:
+                                                write_repeatinfo(repeatinfo_open, detected_repeats)
+                                        if repeatinfo_gz_file_name != None:
+                                                write_repeatinfo(repeatinfo_gz_open, detected_repeats)
+                                        if countstable_file_name != None:
+                                                update_counts(counter, chunk_repeat_counts)
+                        elif repeatcaller == "TRF":
+                                for chunk in pool.imap_unordered(process_TRF, get_seqfile_chunks()):
+                                        chunk_repeat_counts, detected_repeats = chunk
+                                        if repeatinfo_file_name != None:
+                                                write_repeatinfo(repeatinfo_open, detected_repeats)
+                                        if repeatinfo_gz_file_name != None:
+                                                write_repeatinfo(repeatinfo_gz_open, detected_repeats)
+                                        if countstable_file_name != None:
+                                                update_counts(counter, chunk_repeat_counts)
                                 
         if countstable_file_name != None:
                 create_dir_if_not_present(countstable_file_name)
@@ -596,35 +832,35 @@ def parse_parameters():
         parser = argparse.ArgumentParser(description="counTR is a program that de novo detects, filters and groups tandem repeats and generates a tandem repeat count matrix for NGS samples. ")
         subparsers = parser.add_subparsers(dest="program_mode")
 
-        parser_processrepeats = subparsers.add_parser("processrepeats", help="runs trcount from start to end")
-        parser_summarizecounts = subparsers.add_parser("summarizecounts", help="summarizes 'countrepeats' output files into a single count matrix for downstream analysis")
+        parser_processrepeats = subparsers.add_parser("processRepeats", help="runs counTR from start to end")
+        parser_summarizecounts = subparsers.add_parser("summarizeCounts", help="summarizes multiple countstable.txt output files into a single count matrix for downstream analysis")
 
         for subparser in [parser_processrepeats, parser_summarizecounts]:
                 if subparser == parser_processrepeats:
-                        subparser.add_argument("inputpath", type=str, help="path to sequencing data file in fasta(.gz) or fastq(.gz) format")
-                        subparser.add_argument("outputdirectory", type=str, help="directory where the output will be written to")
-                        subparser.add_argument("phobospath", type=str, help="path to Phobos executable")
-                        subparser.add_argument("--outputprefix", type=str, default="", dest="output_prefix", help="prefix of output files, prefix will be taken from input file, if empty string (default: %(default)s)")
-                        subparser.add_argument("--outputtype", type=str, default="c", dest="output_type", help="output to generate, countstable.txt (c), repeatinfo.txt (i), repeatinfo.txt.gz (g), concatenate the letters for multiple outputs (default: %(default)s)")
+                        subparser.add_argument("inputPath", type=str, help="path to sequencing data file in fasta(.gz) or fastq(.gz) format")
+                        subparser.add_argument("outputDirectory", type=str, help="directory where the output will be written to")
+                        subparser.add_argument("repeatCallerPath", type=str, help="path to Phobos or TRF executable")
+                        subparser.add_argument("--outputPrefix", type=str, default="", dest="output_prefix", help="prefix of output files, prefix will be taken from input file, if empty string (default: %(default)s)")
+                        subparser.add_argument("--outputType", type=str, default="c", dest="output_type", help="output to generate, countstable.txt (c), repeatinfo.txt (i), repeatinfo.txt.gz (g), concatenate the letters for multiple outputs (default: %(default)s)")
                         subparser.add_argument("--processes", type=str, default="auto", dest="processes_number", help="number of parallel processes to be used, to automatically set to maximum number of available logical cores, use 'auto' (default: %(default)s)")
                         subparser.add_argument("--grouping", type=str, default=None, dest="grouping_setting", help="repeat grouping settings, example: 'perfection:[0,100)[100,100] length:[0,30)[30,inf]' (note the single quotation marks), if 'None', repeats will be only grouped by their motif (default: %(default)s)")
-                        subparser.add_argument("--groupingmotif", type=str, default="detected", dest="grouping_motif_setting", choices=['detected', 'rc', 'combine'], help="motif to report for grouping, report the detected motif as is (detected), its reverse complement (rc), or combine forward and reverse complement (combine), all motifs are reported as their lexicographically minimal string rotation (default: %(default)s)')")
-                        subparser.add_argument("--minperfection", type=float, default=0, dest="min_perfection", help="minimum perfection of a repeat to be considered (default: %(default)s)")
-                        subparser.add_argument("--maxperfection", type=float, default=100, dest="max_perfection", help="maximum perfection of a repeat to be considered (default: %(default)s)")
-                        subparser.add_argument("--minrepeatlength", type=float, default=0, dest="min_rep_region_length", help="minimum repeat region length for a repeat to be considered (default: %(default)s)")
-                        subparser.add_argument("--maxrepeatlength", type=float, default="inf", dest="max_rep_region_length", help="maximum repeat region length for a repeat to be considered (for infinite, set value to: inf) (default: %(default)s)")
-                        subparser.add_argument("--minunitsize", type=float, default=0, dest="min_unit_size", help="minimum repeat unit size for a repeat to be considered (default: %(default)s)")
-                        subparser.add_argument("--maxunitsize", type=float, default="inf", dest="max_unit_size", help="maximum repeat unit size for a repeat to be considered (for infinite, set value to: inf) (default: %(default)s)")
-                        subparser.add_argument("--mincopynumber", type=float, default=0, dest="min_copy_number", help="minimum number of repeat unit copies in a repeat for a repeat to be considered (default: %(default)s)")
-                        subparser.add_argument("--maxcopynumber", type=float, default="inf", dest="max_copy_number", help="maximum number of repeat unit copies in a repeat for a repeat to be considered (for infinite, set value to: inf) (default: %(default)s)")
-                        subparser.add_argument("--multirepreads", type=str, default="all", dest="multi_rep_reads_setting", help="which repeat to consider in case of reads with multiple repeats (after other filters have been applied), either 'all' (consider all repeats for each read), 'none' (ignore multi repeat reads), 'longest' (only consider the longest repeat) or 'unique_longest' (for each unique repeat unit, only consider the longest) (default: %(default)s)")
-                        subparser.add_argument("--readwhitelist", type=str, default=None, dest="read_whitelist_file", help="path to list of readnames that will not be filtered out, the rest is filtered (default: %(default)s)")
-                        subparser.add_argument("--readblacklist", type=str, default=None, dest="read_blacklist_file", help="path to list of readnames that will be filtered out, the rest is kept (default: %(default)s)")
-                        subparser.add_argument("--readchunksize", type=int, default=50000, dest="read_chunk_size", help="approximate number of lines that are analyzed at once in a (parallel) process (default: %(default)s)")
-                        subparser.add_argument("--addphobosarguments", type=str, default=None, dest="add_phobos_arguments", help="add arguments to the default Phobos call (which is run with: --outputFormat 1 --reportUnit 1 --printRepeatSeqMode 2), example: '--indelScore -4;--mismatchScore -5' (note the single quotation marks). Warning: This command can lead to unexpected behavior and crashes, if used incorrectly (default: %(default)s)")
+                        subparser.add_argument("--groupingMotif", type=str, default="detected", dest="grouping_motif_setting", choices=['detected', 'rc', 'combine'], help="motif to report for grouping, report the detected motif as is (detected), its reverse complement (rc), or combine forward and reverse complement (combine), all motifs are reported as their lexicographically minimal string rotation (default: %(default)s)')")
+                        subparser.add_argument("--minPerfection", type=float, default=0, dest="min_perfection", help="minimum perfection of a repeat to be considered (default: %(default)s)")
+                        subparser.add_argument("--maxPerfection", type=float, default=100, dest="max_perfection", help="maximum perfection of a repeat to be considered (default: %(default)s)")
+                        subparser.add_argument("--minRepeatLength", type=float, default=0, dest="min_rep_region_length", help="minimum repeat region length for a repeat to be considered (default: %(default)s)")
+                        subparser.add_argument("--maxRepeatLength", type=float, default="inf", dest="max_rep_region_length", help="maximum repeat region length for a repeat to be considered (for infinite, set value to: inf) (default: %(default)s)")
+                        subparser.add_argument("--minUnitSize", type=float, default=0, dest="min_unit_size", help="minimum repeat unit size for a repeat to be considered (default: %(default)s)")
+                        subparser.add_argument("--maxUnitSize", type=float, default=6, dest="max_unit_size", help="maximum repeat unit size for a repeat to be considered (for infinite, set value to: inf) (default: %(default)s)")
+                        subparser.add_argument("--minCopyNumber", type=float, default=0, dest="min_copy_number", help="minimum number of repeat unit copies in a repeat for a repeat to be considered (default: %(default)s)")
+                        subparser.add_argument("--maxCopyNumber", type=float, default="inf", dest="max_copy_number", help="maximum number of repeat unit copies in a repeat for a repeat to be considered (for infinite, set value to: inf) (default: %(default)s)")
+                        subparser.add_argument("--multiRepeatReads", type=str, default="all", dest="multi_rep_reads_setting", help="which repeat to consider in case of reads with multiple repeats (after other filters have been applied), either 'all' (consider all repeats for each read), 'none' (ignore multi repeat reads), 'longest' (only consider the longest repeat) or 'unique_longest' (for each unique repeat unit, only consider the longest) (default: %(default)s)")
+                        subparser.add_argument("--readWhiteList", type=str, default=None, dest="read_whitelist_file", help="path to list of readnames that will not be filtered out, the rest is filtered (default: %(default)s)")
+                        subparser.add_argument("--readBlackList", type=str, default=None, dest="read_blacklist_file", help="path to list of readnames that will be filtered out, the rest is kept (default: %(default)s)")
+                        subparser.add_argument("--readChunkSize", type=int, default=50000, dest="read_chunk_size", help="approximate number of lines that are analyzed at once in a (parallel) process (default: %(default)s)")
+                        subparser.add_argument("--repeatCallerArguments", type=str, default=None, dest="repeat_caller_arguments", help="add arguments to the default Phobos call (which is run with: --outputFormat 1 --reportUnit 1 --printRepeatSeqMode 2), example: '--indelScore -4;--mismatchScore -5' (note the single quotation marks). Warning: This command can lead to unexpected behavior and crashes, if used incorrectly (default: %(default)s)")
                 elif subparser == parser_summarizecounts:
-                        subparser.add_argument("outputfile", type=str, help="path to output count matrix.")
-                        subparser.add_argument("inputpaths", type=str, nargs="+", help="countstable.txt files to be summarized into a count matrix")
+                        subparser.add_argument("outputFile", type=str, help="path to output count matrix.")
+                        subparser.add_argument("inputPaths", type=str, nargs="+", help="countstable.txt files to be summarized into a count matrix")
                         subparser.add_argument("--samplenames", type=str, default=None, nargs="+", dest="sample_names", help="list of sample names to be used in the resulting header in the same order as input files. If not set, input file names will be used (default: %(default)s)")
 
         if len(sys.argv) < 2:
@@ -636,10 +872,10 @@ def parse_parameters():
 
 def main():
         args = parse_parameters()
-        if args.program_mode == "processrepeats":
-                input_path = args.inputpath
-                output_directory = args.outputdirectory
-                phobos_path = args.phobospath
+        if args.program_mode == "processRepeats":
+                input_path = args.inputPath
+                output_directory = args.outputDirectory
+                repeatcaller_path = os.path.abspath(args.repeatCallerPath)
                 output_prefix = args.output_prefix
                 output_type = args.output_type
                 processes_number = args.processes_number
@@ -657,7 +893,7 @@ def main():
                 read_whitelist_file = args.read_whitelist_file
                 read_blacklist_file = args.read_blacklist_file
                 read_chunk_size = args.read_chunk_size
-                add_phobos_arguments = args.add_phobos_arguments
+                repeat_caller_arguments = args.repeat_caller_arguments
 
                 output_prefix = determine_output_location(input_path, output_directory, output_prefix)
                 output_flags = list(output_type)
@@ -673,16 +909,24 @@ def main():
                         countstable_file_name = "{}{}".format(output_prefix, ".countstable.txt")
 
                 if processes_number == "auto":
-                        processes_number = len(os.sched_getaffinity(0)) + 2
+                        processes_number = max(1, len(os.sched_getaffinity(0)) - 1)
                 else:
                         processes_number = int(processes_number)
                         
                 grouping = determine_grouping_setting(grouping_setting)
-                process_repeats(input_path, countstable_file_name, repeatinfo_file_name, repeatinfo_gz_file_name, phobos_path, processes_number, grouping, grouping_motif_setting, min_perfection, max_perfection, min_rep_region_length, max_rep_region_length, min_unit_size, max_unit_size, min_copy_number, max_copy_number, multi_rep_reads_setting, read_whitelist_file, read_blacklist_file, read_chunk_size, add_phobos_arguments)
 
-        elif args.program_mode == "summarizecounts":
-                input_paths = args.inputpaths
-                output_file = args.outputfile
+                repeat_caller_help_text = subprocess.run(repeatcaller_path, capture_output=True, text=True)
+
+                if "Phobos" in repeat_caller_help_text.stderr:
+                        repeatcaller = "Phobos"
+                elif "TRF" in repeat_caller_help_text.stderr:
+                        repeatcaller = "TRF"
+                
+                process_repeats(input_path, countstable_file_name, repeatinfo_file_name, repeatinfo_gz_file_name, repeatcaller, repeatcaller_path, processes_number, grouping, grouping_motif_setting, min_perfection, max_perfection, min_rep_region_length, max_rep_region_length, min_unit_size, max_unit_size, min_copy_number, max_copy_number, multi_rep_reads_setting, read_whitelist_file, read_blacklist_file, read_chunk_size, repeat_caller_arguments)
+
+        elif args.program_mode == "summarizeCounts":
+                input_paths = args.inputPaths
+                output_file = args.outputFile
                 sample_names = args.sample_names
                 ordered_samples, repeat_counts = read_countstables(input_paths, sample_names)
                 write_count_matrix(ordered_samples, repeat_counts, output_file)
