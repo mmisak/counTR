@@ -40,7 +40,7 @@ In this example, we are running the `processRepeats` function on a sample called
 - Depending on the analysis, you might want to set the `--groupingMotif` parameter accordingly. In a non strand-aware sequencing (common WGS, ChIP-seq, CUT&Run, CUT&Tag, ..), it usually makes sense to set the parameter to `combine` and combine reverse complements of repeats (e.g. AGC/CTG) into a single group as these techniques commonly do not discriminate between strands. If you do not wish to combine reverse complements of repeats and group repeats by the repeat as it is detected in the repeat (e.g. for a forward-stranded sequencing), set the parameter to `detected`, to group by the reverse complement of the detected repeat (e.g. for a reversely-stranded sequencing), set the parameter to `rc`.
 - If you wish to generate the repeatinfo.txt file to get detailed information (such as perfection, mismatches in comparison to a perfect repeat and more) on every single detected repeat, include `i` (for `.repeatinfo.txt`) or `g` (for `.repeatinfo.txt.gz`) in the `--outputType` parameter. Warning: This file is usually relatively large. In our tests, its file size was often comparable to the size of the raw reads file in FASTQ format. 
   
-### Running counTR summarizecounts
+### Running counTR summarizeCounts
 After obtaining `.countstable.txt` files for all of our samples, we summarize the results into a count matrix that can be used for downstream analysis:
 ```
 python counTR.py summarizeCounts OUTPUT_FILE SAMPLES [...]
