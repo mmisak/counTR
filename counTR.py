@@ -526,7 +526,7 @@ def process_TRF(arguments):
                                 alignment_optimal_repeat_no_indels,  alignment_repeat_in_read_no_indels = map(''.join, zip(*[(a, b) for a, b in zip(alignment_optimal_repeat, alignment_repeat_in_read) if '-' not in (a, b)]))
                                 repeat_properties["mismatches"] = sum(a != b for a, b in zip(alignment_optimal_repeat_no_indels, alignment_repeat_in_read_no_indels))
                                 repeat_properties["normalized_repeat_length"] = repeat_properties["end_in_read"] - repeat_properties["start_in_read"] + 1 - repeat_properties["insertions"] + repeat_properties["deletions"]
-                                repeat_properties["perfection"] = 100*((repeat_properties["normalized_repeat_length"] - repeat_properties["mismatches"] - repeat_properties["deletions"] - repeat_properties["insertions"] - repeat_properties["Ns"])/repeat_properties["normalized_repeat_length"])
+                                repeat_properties["perfection"] = round(100*((repeat_properties["normalized_repeat_length"] - repeat_properties["mismatches"] - repeat_properties["deletions"] - repeat_properties["insertions"] - repeat_properties["Ns"])/repeat_properties["normalized_repeat_length"]), 3)
                                 imperfections = interpret_alignment(alignment_repeat_in_read, alignment_optimal_repeat, repeatunit_offset, repeat_properties["unit"], repeat_properties["start_in_read"], repeat_properties["end_in_read"])
                                 repeat_properties["imperfections"] = imperfections
                                 current_repeat = Repeat(repeat_properties)
