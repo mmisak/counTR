@@ -380,19 +380,20 @@ def smith_waterman(read_seq, ref_seq, match_weight, mismatch_penalty, gap_penalt
             up   = s_arr[base_row - w + j]     - gp   # gap in ref
             left = s_arr[base_row + j - 1]     - gp   # gap in read
 
-            # Tie-break: diag > up > left > 0
-            if diag > 0 and diag >= up and diag >= left:
-                val = diag
-                dirc = DIAG_c
-            elif up > 0 and up >= left:
+            # Tie-break: UP > LEFT > DIAG > 0
+            max_score = max(diag, up, left)
+            if max_score <= 0:
+                val = 0
+                dirc = STOP_c
+            elif up == max_score:
                 val = up
                 dirc = UP_c
-            elif left > 0:
+            elif left == max_score:
                 val = left
                 dirc = LEFT_c
             else:
-                val = 0
-                dirc = STOP_c
+                val = diag
+                dirc = DIAG_c
 
             idx = base_row + j
             s_arr[idx] = val
