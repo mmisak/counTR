@@ -272,14 +272,21 @@ def add_fasta_read_identifiers(fasta):
         """Adds a unique ID (line no.) for each read to its name, avoids problems with (hypothetical) reads with same names, ID is removed later"""
         fasta_line_list = []
         read_lengths = {}
+        current_read_len = 0
+        read_name = None
         for line_counter, line in enumerate(fasta):
-                if line.strip(): #if line not empty/tabs/spaces
+                if line.strip():
                         if line.startswith(">"):
+                                if read_name is not None:
+                                        read_lengths[read_name] = current_read_len
+                                current_read_len = 0
                                 read_name = line.split()[0][1:] + "[ID:" + str(line_counter) + "]"
                                 fasta_line_list.append(">" + read_name + "\n")
                         else:
                                 fasta_line_list.append(line)
-                                read_lengths[read_name] = len(remove_suffix(line, "\n"))
+                                current_read_len += len(remove_suffix(line, "\n"))
+        if read_name is not None:
+                read_lengths[read_name] = current_read_len
         return(fasta_line_list, read_lengths)
 
 def convert_fq_line_list_to_fa(fastq_line_list):
